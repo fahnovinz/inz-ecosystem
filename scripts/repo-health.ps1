@@ -41,7 +41,7 @@ if ($Repo -notmatch "^([^/]+)/([^/]+)$") {
 $owner, $name = $Repo -split "/"
 
 Write-Host ""
-Write-Host "  INZ Repo Health — $Repo" -ForegroundColor Cyan
+Write-Host "  INZ Repo Health - $Repo" -ForegroundColor Cyan
 Write-Host ""
 
 $data = Invoke-GitHubApi -Path "/repos/$owner/$name"
@@ -84,5 +84,5 @@ $grade = if ($score -ge 90) { "Excellent" } elseif ($score -ge 70) { "Good" } el
 
 Write-Host ""
 Write-Host "  Score: $score/100 ($grade)"
-Write-Host "  Stars: $($data.stargazers_count)  |  Issues: $($data.open_issues_count)  |  Last push: $($data.pushed_at)"
+Write-Host ("  Stars: {0}  Issues: {1}  Last push: {2}" -f $data.stargazers_count, $data.open_issues_count, $data.pushed_at)
 Write-Host ""
