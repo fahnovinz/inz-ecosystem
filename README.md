@@ -5,7 +5,7 @@ Modular developer toolkit for GitHub analytics, repository health checks, and in
 Built by [@fahnovinz](https://github.com/fahnovinz) (Fahrezi Nova Inzaghi).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/fahnovinz/inz-ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/fahnovinz/inz-ecosystem/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-0.2.0-green.svg)](CHANGELOG.md)
 
 ## Why INZ?
 
