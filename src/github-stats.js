@@ -1,20 +1,5 @@
 const { githubFetch, githubFetchAll } = require("./github-api");
-
-function daysBetween(from, to = new Date()) {
-  return Math.floor((to - new Date(from)) / (1000 * 60 * 60 * 24));
-}
-
-function oneYearAgo() {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() - 1);
-  return date.toISOString().slice(0, 10);
-}
-
-function ninetyDaysAgo() {
-  const date = new Date();
-  date.setDate(date.getDate() - 90);
-  return date.toISOString().slice(0, 10);
-}
+const { daysBetween, daysAgo, oneYearAgo } = require("./utils");
 
 async function countMergedPrs(username, token) {
   const since = oneYearAgo();
@@ -25,7 +10,7 @@ async function countMergedPrs(username, token) {
 
 async function countRecentEvents(username, token) {
   const events = await githubFetchAll(`/users/${username}/events/public`, token, 3);
-  const cutoff = ninetyDaysAgo();
+  const cutoff = daysAgo(90);
   const recent = events.filter((event) => event.created_at.slice(0, 10) >= cutoff);
   const types = new Set(recent.map((event) => event.type));
   return { count: recent.length, types: [...types] };
@@ -53,12 +38,23 @@ async function analyzeRepos(username, token) {
         topContributorRepo = repo.full_name;
       }
     } catch {
-      // empty or inaccessible repo
+      // skip inaccessible repos
     }
   }
 
   const totalStars = publicRepos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
   const licensed = publicRepos.filter((repo) => repo.license).length;
+  const languages = {};
+
+  for (const repo of publicRepos) {
+    if (!repo.language) continue;
+    languages[repo.language] = (languages[repo.language] || 0) + 1;
+  }
+
+  const topLanguages = Object.entries(languages)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, repos: count }));
 
   return {
     totalPublic: publicRepos.length,
@@ -66,6 +62,7 @@ async function analyzeRepos(username, token) {
     licensed,
     topContributors,
     topContributorRepo,
+    topLanguages,
     topRepos: publicRepos.slice(0, 5).map((repo) => ({
       name: repo.full_name,
       stars: repo.stargazers_count,

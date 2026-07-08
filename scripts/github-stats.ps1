@@ -29,7 +29,7 @@ function Get-DaysSince {
 }
 
 Write-Host ""
-Write-Host "=== INZ GitHub Stats ===" -ForegroundColor Cyan
+Write-Host "  INZ GitHub Stats" -ForegroundColor Cyan
 Write-Host ""
 
 $user = Invoke-GitHubApi -Path "/users/$Username"

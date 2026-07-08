@@ -1,7 +1,7 @@
 {
   "name": "inz-ecosystem",
-  "version": "0.1.0",
-  "description": "Modular open-source developer toolkit — GitHub analytics, repo insights, and indie dev utilities",
+  "version": "0.2.0",
+  "description": "Modular open-source developer toolkit — GitHub analytics, repo health, and indie dev utilities",
   "license": "MIT",
   "author": "fahnovinz",
   "repository": {
@@ -16,10 +16,12 @@
     "developer-tools",
     "github",
     "analytics",
+    "repo-health",
     "open-source",
     "cli",
     "inz-ecosystem",
-    "indie-dev"
+    "indie-dev",
+    "badges"
   ],
   "bin": {
     "inz": "./bin/inz.js"
@@ -27,10 +29,14 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "files": [
     "bin",
     "src",
     "scripts",
-    "packages"
+    "packages",
+    "docs"
   ]
 }

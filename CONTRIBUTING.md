@@ -1,33 +1,39 @@
 # Contributing to INZ Ecosystem
 
-Thanks for helping build the ecosystem!
+Thanks for helping grow the ecosystem!
 
-## How to Contribute
+## Quick start
 
-1. Fork the repository
-2. Create a branch: `git checkout -b feature/your-feature`
-3. Make your changes
-4. Test locally:
-   ```bash
-   node bin/inz.js stats YOUR_USERNAME
-   ```
-5. Commit with a clear message
-6. Open a Pull Request
+```bash
+git clone https://github.com/fahnovinz/inz-ecosystem.git
+cd inz-ecosystem
 
-## Good First Issues
+node bin/inz.js stats YOUR_USERNAME
+node bin/inz.js health fahnovinz/inz-ecosystem
+node --test test/*.test.js
+```
 
-- Add npm/PyPI download stats
-- Repo health dashboard
-- Improve CLI output formatting
-- Add tests for github-stats module
-- GitLab profile support
+## What to work on
 
-## Code Style
+- **New health checks** — add to `src/repo-health.js` with tests
+- **Badge types** — extend `src/badges.js`
+- **CLI improvements** — better output, new flags, error messages
+- **Docs** — fix typos, add examples, translate guides
+- **Platform support** — bash scripts, fish completions, etc.
 
-- Zero runtime dependencies preferred
-- Keep modules small and focused
-- Match existing patterns
+## Pull request guidelines
 
-## Community Standards
+1. One feature or fix per PR
+2. Run tests: `node --test test/*.test.js`
+3. Update CHANGELOG.md under `[Unreleased]` or the current version
+4. Keep zero runtime dependencies
 
-We follow the [Contributor Covenant](CODE_OF_CONDUCT.md).
+## Code style
+
+- Small, focused modules in `src/`
+- Use existing patterns (`github-api.js`, `utils.js`)
+- Prefer readable code over clever abstractions
+
+## Community
+
+Be respectful. We follow the [Contributor Covenant](CODE_OF_CONDUCT.md).

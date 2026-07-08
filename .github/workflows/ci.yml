@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-test:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,15 +16,23 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Verify CLI loads
+      - name: Run tests
+        run: node --test test/*.test.js
+
+      - name: Verify CLI
         run: node bin/inz.js help
 
-      - name: Smoke test stats command
-        run: node bin/inz.js stats octocat || true
+      - name: Smoke test (live API)
+        run: |
+          node bin/inz.js stats octocat || true
+          node bin/inz.js health fahnovinz/inz-ecosystem || true
 
-      - name: Verify source files syntax
+      - name: Syntax check
         run: |
           node --check bin/inz.js
           node --check src/github-stats.js
+          node --check src/repo-health.js
+          node --check src/badges.js
           node --check src/github-api.js
           node --check src/report.js
+          node --check src/utils.js
