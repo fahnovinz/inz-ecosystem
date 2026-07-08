@@ -1,28 +1,28 @@
 {
-  "name": "claude-oss-kit",
-  "version": "1.0.0",
-  "description": "Open-source toolkit to verify Claude for OSS eligibility and prepare your application",
+  "name": "inz-ecosystem",
+  "version": "0.1.0",
+  "description": "Modular open-source developer toolkit — GitHub analytics, repo insights, and indie dev utilities",
   "license": "MIT",
   "author": "fahnovinz",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fahnovinz/claude-oss-kit.git"
+    "url": "https://github.com/fahnovinz/inz-ecosystem.git"
   },
-  "homepage": "https://github.com/fahnovinz/claude-oss-kit#readme",
+  "homepage": "https://github.com/fahnovinz/inz-ecosystem#readme",
   "bugs": {
-    "url": "https://github.com/fahnovinz/claude-oss-kit/issues"
+    "url": "https://github.com/fahnovinz/inz-ecosystem/issues"
   },
   "keywords": [
-    "claude",
-    "open-source",
-    "oss",
-    "anthropic",
-    "eligibility",
+    "developer-tools",
     "github",
-    "developer-tools"
+    "analytics",
+    "open-source",
+    "cli",
+    "inz-ecosystem",
+    "indie-dev"
   ],
   "bin": {
-    "claude-oss-kit": "./bin/claude-oss-kit.js"
+    "inz": "./bin/inz.js"
   },
   "engines": {
     "node": ">=18"
@@ -30,7 +30,7 @@
   "files": [
     "bin",
     "src",
-    "docs",
-    "scripts"
+    "scripts",
+    "packages"
   ]
 }

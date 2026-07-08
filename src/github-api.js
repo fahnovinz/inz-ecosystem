@@ -3,7 +3,7 @@ const GITHUB_API = "https://api.github.com";
 async function githubFetch(path, token) {
   const headers = {
     Accept: "application/vnd.github+json",
-    "User-Agent": "claude-oss-kit",
+    "User-Agent": "inz-ecosystem",
   };
 
   if (token) {

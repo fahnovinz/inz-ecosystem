@@ -1,18 +1,18 @@
 ---
 name: Feature Request
-about: Suggest a feature for claude-oss-kit
+about: Suggest a new tool or improvement
 title: "[Feature] "
 labels: enhancement
 ---
 
-**Is your feature request related to a problem?**
-A clear description of the problem.
+**Problem**
+What problem does this solve?
 
-**Describe the solution you'd like**
-What you want to happen.
+**Proposed solution**
+What would you like to see?
 
-**Describe alternatives you've considered**
-Any alternative solutions or features.
+**Alternatives**
+Other approaches considered?
 
-**Additional context**
-Add any other context or screenshots.
+**Package**
+Which part of the ecosystem? (e.g. github-stats, repo-health, new tool)

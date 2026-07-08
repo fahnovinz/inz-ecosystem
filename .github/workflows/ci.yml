@@ -17,15 +17,14 @@ jobs:
           node-version: "20"
 
       - name: Verify CLI loads
-        run: node bin/claude-oss-kit.js help
+        run: node bin/inz.js help
 
-      - name: Check eligibility for octocat (smoke test)
-        run: node bin/claude-oss-kit.js check octocat || true
+      - name: Smoke test stats command
+        run: node bin/inz.js stats octocat || true
 
       - name: Verify source files syntax
         run: |
-          node --check bin/claude-oss-kit.js
-          node --check src/check-eligibility.js
+          node --check bin/inz.js
+          node --check src/github-stats.js
           node --check src/github-api.js
           node --check src/report.js
-          node --check src/application-draft.js

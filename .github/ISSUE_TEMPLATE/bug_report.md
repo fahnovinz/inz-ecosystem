@@ -1,25 +1,25 @@
 ---
 name: Bug Report
-about: Report a bug in claude-oss-kit
+about: Report a bug in INZ Ecosystem
 title: "[Bug] "
 labels: bug
 ---
 
 **Describe the bug**
-A clear description of what went wrong.
+What went wrong?
 
 **To Reproduce**
 Steps to reproduce:
-1. Run `...`
-2. See error
+1.
+2.
 
 **Expected behavior**
-What you expected to happen.
+What you expected.
 
 **Environment**
-- OS: [e.g. Windows 11]
-- Node version: [e.g. 20.x]
-- GitHub username tested: [optional]
+- OS:
+- Node version:
+- Command run:
 
 **Additional context**
-Add any other context or screenshots.
+Screenshots, logs, etc.
