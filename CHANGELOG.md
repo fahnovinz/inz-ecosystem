@@ -2,6 +2,11 @@
 
 All notable changes to INZ Ecosystem are documented here.
 
+## [Unreleased]
+
+### Changed
+- CI now runs on `workflow_dispatch` only (stops failure emails on accounts without Actions billing)
+
 ## [0.2.0] — 2026-07-08
 
 ### Added
