@@ -71,7 +71,12 @@ $weights = @(10, 15, 15, 15, 10, 10, 15)
 
 Write-Host "  Checks"
 for ($i = 0; $i -lt $checks.Count; $i++) {
-    $mark = if ($checks[$i].Pass) { "✓"; $score += $weights[$i] } else { "✗" }
+    if ($checks[$i].Pass) {
+        $mark = "[ok]"
+        $score += $weights[$i]
+    } else {
+        $mark = "[--]"
+    }
     Write-Host "  $mark $($checks[$i].Label)"
 }
 

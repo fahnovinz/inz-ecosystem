@@ -1,6 +1,22 @@
 const { githubFetch } = require("./github-api");
 const { daysBetween } = require("./utils");
 
+async function fetchTopics(owner, repo, token) {
+  const headers = {
+    Accept: "application/vnd.github.mercy-preview+json",
+    "User-Agent": "inz-ecosystem",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/topics`, { headers });
+    if (!response.ok) return { names: [] };
+    return response.json();
+  } catch {
+    return { names: [] };
+  }
+}
+
 const CHECKS = [
   {
     id: "description",
@@ -76,7 +92,7 @@ async function fetchRepoHealth(repoInput, options = {}) {
 
   const [repoData, topicsPayload, hasReadme, hasContributing, hasCi] = await Promise.all([
     githubFetch(`/repos/${owner}/${repo}`, token),
-    githubFetch(`/repos/${owner}/${repo}/topics`, token).catch(() => ({ names: [] })),
+    fetchTopics(owner, repo, token),
     fileExists(owner, repo, "README.md", token),
     fileExists(owner, repo, "CONTRIBUTING.md", token),
     hasWorkflows(owner, repo, token),

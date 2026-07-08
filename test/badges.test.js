@@ -16,6 +16,6 @@ describe("badges", () => {
     assert.match(result.markdown, /GitHub stars/);
     assert.match(result.markdown, /GitHub forks/);
     assert.match(result.markdown, /License/);
-    assert.match(result.markdown, /JavaScript/);
+    assert.match(result.markdown, /languages\/top\/fahnovinz\/inz-ecosystem/);
   });
 });

@@ -41,7 +41,7 @@ function printHealthReport(report) {
   console.log("");
   console.log("  Checks");
   for (const check of report.checks) {
-    const mark = check.passed ? "✓" : "✗";
+    const mark = check.passed ? "[ok]" : "[--]";
     console.log(`  ${mark} ${check.label}`);
   }
   console.log("");
