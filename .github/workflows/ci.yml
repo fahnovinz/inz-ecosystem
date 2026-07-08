@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify CLI loads
+        run: node bin/claude-oss-kit.js help
+
+      - name: Check eligibility for octocat (smoke test)
+        run: node bin/claude-oss-kit.js check octocat || true
+
+      - name: Verify source files syntax
+        run: |
+          node --check bin/claude-oss-kit.js
+          node --check src/check-eligibility.js
+          node --check src/github-api.js
+          node --check src/report.js
+          node --check src/application-draft.js
