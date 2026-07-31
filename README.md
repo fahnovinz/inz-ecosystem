@@ -3,7 +3,7 @@
 **Open-source indie platform** by [@fahnovinz](https://github.com/fahnovinz) — lightweight developer tools **and** a privacy-first flagship product.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.1-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.2-green.svg)](CHANGELOG.md)
 [![CI](https://github.com/fahnovinz/inz-ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/fahnovinz/inz-ecosystem/actions/workflows/ci.yml)
 [![Flagship](https://img.shields.io/badge/flagship-VRAXTAL_VAULT-0ea5e9.svg)](https://github.com/fahnovinz/vraxtal-vault)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
@@ -84,6 +84,16 @@ node bin/inz.js badges fahnovinz/inz-ecosystem
 node bin/inz.js products --json
 node bin/inz.js health fahnovinz/vraxtal-vault --json
 ```
+
+### Tests & coverage
+
+```bash
+npm test                 # node:test suite (mocked network, no live API)
+npm run test:coverage    # c8 → text + lcov + html in coverage/
+.\scripts\verify.ps1     # Windows: tests + coverage + CLI + syntax
+```
+
+Coverage thresholds (see `.c8rc.json`): **≥80%** lines / functions / statements, **≥70%** branches on `src/`.
 
 ### Example — product catalog
 

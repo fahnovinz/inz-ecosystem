@@ -102,4 +102,9 @@ async function fetchGitHubStats(username, options = {}) {
   };
 }
 
-module.exports = { fetchGitHubStats };
+module.exports = {
+  fetchGitHubStats,
+  countMergedPrs,
+  countRecentEvents,
+  analyzeRepos,
+};

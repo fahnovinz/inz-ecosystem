@@ -39,7 +39,9 @@ So a valid workflow still scores when runs are blocked by billing.
 ## Run the same checks locally
 
 ```bash
-node --test test/*.test.js
+npm ci
+npm test
+npm run test:coverage   # c8: text + coverage/lcov.info + coverage/index.html
 node bin/inz.js help
 node bin/inz.js version
 node bin/inz.js products --json
@@ -52,3 +54,5 @@ PowerShell helper:
 ```
 
 Network modules use injectable mock `fetch` in unit tests — no live GitHub calls required in CI.
+
+Open HTML report: `coverage/index.html` after `npm run test:coverage`.

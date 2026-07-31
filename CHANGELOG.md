@@ -4,6 +4,18 @@ All notable changes to INZ Ecosystem are documented here.
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-07-31
+
+### Added
+- Deep **fetchGitHubStats** full-flow E2E tests (events window, private/fork filter, contributor ranking, language map, PR zero-path, profile errors)
+- Helper unit tests: `countMergedPrs`, `countRecentEvents`, `analyzeRepos`
+- **c8** coverage (`npm run test:coverage`) with thresholds (lines/functions/statements 80%, branches 70%)
+- CI runs coverage + uploads `coverage/lcov.info` artifact
+- `scripts/verify.ps1` runs c8 locally
+
+### Changed
+- Version 0.3.2; export stats helpers for focused tests
+
 ## [0.3.1] — 2026-07-31
 
 ### Fixed

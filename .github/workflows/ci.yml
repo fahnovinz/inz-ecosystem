@@ -20,8 +20,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Run tests
-        run: node --test test/*.test.js
+      - name: Install dev dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
 
       - name: Verify CLI
         run: |
@@ -39,3 +42,11 @@ jobs:
           node --check src/products.js
           node --check src/report.js
           node --check src/utils.js
+
+      - name: Upload coverage (lcov)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: ignore

@@ -2,8 +2,12 @@
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
-Write-Host "== tests ==" -ForegroundColor Cyan
-node --test test/*.test.js
+Write-Host "== tests + coverage (c8) ==" -ForegroundColor Cyan
+if (-not (Test-Path "node_modules\c8")) {
+  npm install --no-fund --no-audit
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+npm run test:coverage
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "== CLI ==" -ForegroundColor Cyan

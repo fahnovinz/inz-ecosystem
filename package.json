@@ -1,6 +1,6 @@
 {
   "name": "inz-ecosystem",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "INZ Ecosystem — modular indie platform: GitHub developer tools + VRAXTAL VAULT flagship product",
   "license": "MIT",
   "author": "fahnovinz",
@@ -34,7 +34,9 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:coverage": "c8 node --test test/*.test.js",
+    "coverage": "npm run test:coverage"
   },
   "files": [
     "bin",
@@ -42,5 +44,8 @@
     "scripts",
     "packages",
     "docs"
-  ]
+  ],
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
 }
