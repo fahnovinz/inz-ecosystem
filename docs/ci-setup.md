@@ -1,36 +1,54 @@
 # CI Setup
 
-CI is defined in `.github/workflows/ci.yml` and runs on:
+Workflow: `.github/workflows/ci.yml`
 
-- `push` to `main`
-- `pull_request` targeting `main`
-- `workflow_dispatch` (manual)
+| Trigger | Status |
+|---------|--------|
+| `push` → `main` | Enabled |
+| `pull_request` → `main` | Enabled |
+| `workflow_dispatch` | Enabled |
 
-Jobs: `node --test`, CLI smoke (`help` / `version` / `products --json`), and `node --check` on entrypoints.
+Jobs (when a runner starts): `node --test`, CLI smoke (`help` / `version` / `products --json`), `node --check` on entrypoints.
 
-## If Actions fails with no runner
+## Current account blocker (2026-07)
 
-A job that dies in a few seconds with **no runner assigned** is usually account config, not the test suite:
+If the Actions tab shows a red X in ~3–5 seconds with **empty steps**, open the job annotations. You may see:
 
-1. **Spending limit is $0** — set a small Actions limit at https://github.com/settings/billing (public repos still use free quota)
-2. **Email not verified** — https://github.com/settings/emails
-3. **First-time workflow approval** — open the Actions tab and approve
+> **The job was not started because your account is locked due to a billing issue.**
+
+That is **not a test failure**. GitHub never assigned a runner (`runner_id: 0`).
+
+### Unlock Actions
+
+1. https://github.com/settings/billing — clear any failed payment / locked state  
+2. Set a **GitHub Actions spending limit** (even $1 is enough for public free quota)  
+3. Verify email: https://github.com/settings/emails  
+4. Re-run: Actions → CI → **Re-run failed jobs**, or push a tiny commit  
+
+Until unlocked, the workflow file still exists and `inz health` still scores **CI workflow detected** (Actions API + filesystem fallback).
 
 ## Health check: “CI workflow detected”
 
-`inz health` counts a repo as having CI if either:
+`inz health` counts CI if either:
 
-1. GitHub Actions API reports `total_count > 0`, or  
-2. Fallback: `.github/workflows/*.{yml,yaml}` exists in the tree  
+1. Actions API `total_count > 0`, or  
+2. Fallback: any `.github/workflows/*.{yml,yaml}` in the tree  
 
-So a valid workflow file still scores even when Actions is billing-limited or disabled for runs.
+So a valid workflow still scores when runs are blocked by billing.
 
-## Run tests locally
+## Run the same checks locally
 
 ```bash
 node --test test/*.test.js
 node bin/inz.js help
+node bin/inz.js version
 node bin/inz.js products --json
 ```
 
-Network modules (`github-api`, `github-stats`, `repo-health`) are unit-tested with an injectable mock `fetch` — no live GitHub calls in CI.
+PowerShell helper:
+
+```powershell
+.\scripts\verify.ps1
+```
+
+Network modules use injectable mock `fetch` in unit tests — no live GitHub calls required in CI.

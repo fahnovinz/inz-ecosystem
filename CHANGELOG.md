@@ -7,15 +7,20 @@ All notable changes to INZ Ecosystem are documented here.
 ## [0.3.1] — 2026-07-31
 
 ### Fixed
-- **CI runs on push/PR again** (`main`) — not workflow_dispatch-only
-- **CI health check** falls back to listing `.github/workflows/*.{yml,yaml}` when the Actions API is blocked/empty (billing / disabled runners)
+- **CI workflow triggers** on `push` / `pull_request` to `main` (plus manual dispatch)
+- **CI health check** falls back to listing `.github/workflows/*.{yml,yaml}` when the Actions API is blocked/empty
 - Product card copy: `packages/vraxtal-vault/` is explicitly a **reference card**, not source code
 
 ### Added
-- Unit tests with injectable mock `fetch`: `github-api`, `github-stats`, `repo-health`
+- Unit tests with injectable mock `fetch`: `github-api`, `github-stats`, `repo-health` (18 tests total)
 - `scoreFromContext` export for pure health scoring tests
 - `setFetch` / `resetFetch` on `github-api` for test isolation
 - CI steps: `products --json`, syntax-check `src/products.js`
+- `scripts/verify.ps1` — local mirror of the GitHub Actions job
+- Docs: billing-lock annotation + unlock steps in `docs/ci-setup.md`
+
+### Note
+- If GitHub shows *account locked due to a billing issue*, runners never start — fix billing at github.com/settings/billing. Workflow file + health score still count as CI present.
 
 ## [0.3.0] — 2026-07-31
 
