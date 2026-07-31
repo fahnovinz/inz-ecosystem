@@ -1,18 +1,11 @@
 name: CI
 
-# Runs manually until GitHub Actions is enabled on your account.
-# Auto-runs on push were failing instantly (no runner assigned) — usually
-# billing/spending limit or email verification on new accounts.
-#
-# Enable auto-runs later: uncomment the push/pull_request triggers below
-# after fixing https://github.com/settings/billing
-
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  # pull_request:
-  #   branches: [main]
 
 permissions:
   contents: read
@@ -31,7 +24,10 @@ jobs:
         run: node --test test/*.test.js
 
       - name: Verify CLI
-        run: node bin/inz.js help
+        run: |
+          node bin/inz.js help
+          node bin/inz.js version
+          node bin/inz.js products --json
 
       - name: Syntax check
         run: |
@@ -40,5 +36,6 @@ jobs:
           node --check src/repo-health.js
           node --check src/badges.js
           node --check src/github-api.js
+          node --check src/products.js
           node --check src/report.js
           node --check src/utils.js

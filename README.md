@@ -3,7 +3,8 @@
 **Open-source indie platform** by [@fahnovinz](https://github.com/fahnovinz) — lightweight developer tools **and** a privacy-first flagship product.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-green.svg)](CHANGELOG.md)
+[![CI](https://github.com/fahnovinz/inz-ecosystem/actions/workflows/ci.yml/badge.svg)](https://github.com/fahnovinz/inz-ecosystem/actions/workflows/ci.yml)
 [![Flagship](https://img.shields.io/badge/flagship-VRAXTAL_VAULT-0ea5e9.svg)](https://github.com/fahnovinz/vraxtal-vault)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
 
@@ -129,7 +130,7 @@ inz-ecosystem/
 ├── src/                       # Core modules (stats, health, badges, products)
 ├── scripts/                   # PowerShell (Windows-native)
 ├── packages/                  # Per-tool & product cards
-│   ├── vraxtal-vault/         # Flagship product card → separate repo
+│   ├── vraxtal-vault/         # Reference card only (code → vraxtal-vault repo)
 │   ├── github-stats/
 │   ├── repo-health/
 │   └── badges/

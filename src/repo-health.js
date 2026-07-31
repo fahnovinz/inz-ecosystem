@@ -2,16 +2,10 @@ const { githubFetch } = require("./github-api");
 const { daysBetween } = require("./utils");
 
 async function fetchTopics(owner, repo, token) {
-  const headers = {
-    Accept: "application/vnd.github.mercy-preview+json",
-    "User-Agent": "inz-ecosystem",
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
   try {
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/topics`, { headers });
-    if (!response.ok) return { names: [] };
-    return response.json();
+    // Topics endpoint needs the mercurial/mercy preview historically; vnd.github+json works on modern API.
+    const data = await githubFetch(`/repos/${owner}/${repo}/topics`, token);
+    return data;
   } catch {
     return { names: [] };
   }
@@ -77,13 +71,43 @@ async function fileExists(owner, repo, path, token) {
   }
 }
 
+/**
+ * Prefer Actions workflows API; fall back to listing `.github/workflows/*.{yml,yaml}`
+ * so a workflow_dispatch-only or billing-limited Actions account still counts as "CI present".
+ */
 async function hasWorkflows(owner, repo, token) {
   try {
     const workflows = await githubFetch(`/repos/${owner}/${repo}/actions/workflows`, token);
-    return (workflows.total_count || 0) > 0;
+    if ((workflows.total_count || 0) > 0) return true;
+  } catch {
+    // continue to filesystem fallback
+  }
+
+  try {
+    const files = await githubFetch(`/repos/${owner}/${repo}/contents/.github/workflows`, token);
+    if (!Array.isArray(files)) return false;
+    return files.some((f) => f.type === "file" && /\.(ya?ml)$/i.test(f.name));
   } catch {
     return false;
   }
+}
+
+function scoreFromContext(ctx) {
+  const checks = CHECKS.map((check) => ({
+    id: check.id,
+    label: check.label,
+    weight: check.weight,
+    passed: check.test(ctx),
+  }));
+
+  const score = checks.reduce((sum, check) => sum + (check.passed ? check.weight : 0), 0);
+
+  let grade = "Needs work";
+  if (score >= 90) grade = "Excellent";
+  else if (score >= 70) grade = "Good";
+  else if (score >= 50) grade = "Fair";
+
+  return { checks, score, grade };
 }
 
 async function fetchRepoHealth(repoInput, options = {}) {
@@ -106,19 +130,7 @@ async function fetchRepoHealth(repoInput, options = {}) {
     hasCi,
   };
 
-  const checks = CHECKS.map((check) => ({
-    id: check.id,
-    label: check.label,
-    weight: check.weight,
-    passed: check.test(ctx),
-  }));
-
-  const score = checks.reduce((sum, check) => sum + (check.passed ? check.weight : 0), 0);
-
-  let grade = "Needs work";
-  if (score >= 90) grade = "Excellent";
-  else if (score >= 70) grade = "Good";
-  else if (score >= 50) grade = "Fair";
+  const { checks, score, grade } = scoreFromContext(ctx);
 
   return {
     fullName: repoData.full_name,
@@ -138,4 +150,4 @@ async function fetchRepoHealth(repoInput, options = {}) {
   };
 }
 
-module.exports = { fetchRepoHealth, CHECKS };
+module.exports = { fetchRepoHealth, CHECKS, scoreFromContext, hasWorkflows };

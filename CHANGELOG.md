@@ -4,6 +4,19 @@ All notable changes to INZ Ecosystem are documented here.
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-07-31
+
+### Fixed
+- **CI runs on push/PR again** (`main`) — not workflow_dispatch-only
+- **CI health check** falls back to listing `.github/workflows/*.{yml,yaml}` when the Actions API is blocked/empty (billing / disabled runners)
+- Product card copy: `packages/vraxtal-vault/` is explicitly a **reference card**, not source code
+
+### Added
+- Unit tests with injectable mock `fetch`: `github-api`, `github-stats`, `repo-health`
+- `scoreFromContext` export for pure health scoring tests
+- `setFetch` / `resetFetch` on `github-api` for test isolation
+- CI steps: `products --json`, syntax-check `src/products.js`
+
 ## [0.3.0] — 2026-07-31
 
 ### Added
@@ -17,9 +30,6 @@ All notable changes to INZ Ecosystem are documented here.
 - README reframed as platform: tools **+** flagship product
 - Version bump to 0.3.0; keywords include `vraxtal-vault`, privacy, self-hosted
 - Packages index lists product vs tool kinds
-
-### Note
-- CI remains `workflow_dispatch` only until Actions billing is enabled on the account
 
 ## [0.2.0] — 2026-07-08
 

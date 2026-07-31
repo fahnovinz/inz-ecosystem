@@ -1,5 +1,17 @@
 const GITHUB_API = "https://api.github.com";
 
+/** @type {typeof fetch} */
+let fetchImpl = globalThis.fetch.bind(globalThis);
+
+/** Test helper: inject a mock fetch. Call resetFetch() in after(). */
+function setFetch(impl) {
+  fetchImpl = impl;
+}
+
+function resetFetch() {
+  fetchImpl = globalThis.fetch.bind(globalThis);
+}
+
 async function githubFetch(path, token) {
   const headers = {
     Accept: "application/vnd.github+json",
@@ -10,7 +22,7 @@ async function githubFetch(path, token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${GITHUB_API}${path}`, { headers });
+  const response = await fetchImpl(`${GITHUB_API}${path}`, { headers });
 
   if (!response.ok) {
     const body = await response.text();
@@ -35,4 +47,4 @@ async function githubFetchAll(path, token, maxPages = 5) {
   return items;
 }
 
-module.exports = { githubFetch, githubFetchAll };
+module.exports = { githubFetch, githubFetchAll, setFetch, resetFetch, GITHUB_API };

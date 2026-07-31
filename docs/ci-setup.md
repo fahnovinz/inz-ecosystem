@@ -1,29 +1,36 @@
 # CI Setup
 
-## Why did CI fail?
+CI is defined in `.github/workflows/ci.yml` and runs on:
 
-If you received a **"CI / main run failed"** email, it's usually **not a code bug**.
+- `push` to `main`
+- `pull_request` targeting `main`
+- `workflow_dispatch` (manual)
 
-The workflow failed in ~4 seconds with **no runner assigned**. Common causes on new GitHub accounts:
+Jobs: `node --test`, CLI smoke (`help` / `version` / `products --json`), and `node --check` on entrypoints.
 
-1. **Spending limit is $0** — GitHub blocks Actions until you set a small limit
-2. **Email not verified** — check your inbox for GitHub verification
-3. **Actions awaiting approval** — visit the Actions tab and approve workflows
+## If Actions fails with no runner
 
-## Fix (5 minutes)
+A job that dies in a few seconds with **no runner assigned** is usually account config, not the test suite:
 
-1. Verify email: https://github.com/settings/emails
-2. Open billing: https://github.com/settings/billing
-3. Under **Spending limits**, set GitHub Actions limit to **$1** (public repos are still free within quota)
-4. Go to https://github.com/fahnovinz/inz-ecosystem/actions and click **Run workflow**
+1. **Spending limit is $0** — set a small Actions limit at https://github.com/settings/billing (public repos still use free quota)
+2. **Email not verified** — https://github.com/settings/emails
+3. **First-time workflow approval** — open the Actions tab and approve
 
-## Re-enable auto CI on push
+## Health check: “CI workflow detected”
 
-After Actions works manually, edit `.github/workflows/ci.yml` and uncomment the `push` / `pull_request` triggers.
+`inz health` counts a repo as having CI if either:
 
-## Run tests locally (no Actions needed)
+1. GitHub Actions API reports `total_count > 0`, or  
+2. Fallback: `.github/workflows/*.{yml,yaml}` exists in the tree  
+
+So a valid workflow file still scores even when Actions is billing-limited or disabled for runs.
+
+## Run tests locally
 
 ```bash
 node --test test/*.test.js
 node bin/inz.js help
+node bin/inz.js products --json
 ```
+
+Network modules (`github-api`, `github-stats`, `repo-health`) are unit-tested with an injectable mock `fetch` — no live GitHub calls in CI.

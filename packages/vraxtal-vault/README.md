@@ -1,4 +1,17 @@
-# VRAXTAL VAULT
+# VRAXTAL VAULT — product card
+
+> **This folder is a reference card only.**  
+> There is **no application source code** here.  
+> Actual code, deploy scripts, and tests live in the separate repository:  
+> **https://github.com/fahnovinz/vraxtal-vault**
+
+Why a card instead of a monorepo copy?
+
+- Keeps production secrets / data boundaries out of the CLI toolkit repo  
+- One source of truth for the app (`vraxtal-vault`)  
+- INZ still catalogs the product via `inz products` and this package README  
+
+---
 
 **Flagship product of the [INZ Ecosystem](https://github.com/fahnovinz/inz-ecosystem).**
 
@@ -6,7 +19,8 @@ Self-hosted encrypted personal vault for documents, photos, and videos — priva
 
 | | |
 |--|--|
-| **Repo** | [fahnovinz/vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault) |
+| **Source repo** | [fahnovinz/vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault) |
+| **This path** | Documentation pointer / catalog entry only |
 | **Status** | Flagship product |
 | **License** | MIT |
 | **Stack** | Node.js · Express · AES-256-GCM · SQLite · Cloudflare Tunnel |
@@ -24,13 +38,13 @@ VRAXTAL VAULT is the production product line:
 ## Quick links
 
 ```bash
-# Clone the product (separate repo)
+# Clone the product (separate repo — not this folder)
 git clone https://github.com/fahnovinz/vraxtal-vault.git
 cd vraxtal-vault
 npm ci
 npm test
 
-# List it from the ecosystem CLI
+# Catalog / health from the ecosystem CLI
 node ../../bin/inz.js products
 node ../../bin/inz.js health fahnovinz/vraxtal-vault
 ```
@@ -39,13 +53,18 @@ node ../../bin/inz.js health fahnovinz/vraxtal-vault
 
 Use this product as a reference for:
 
-1. **Privacy in the AI era** — personal files stay on *your* VPS, not a third-party cloud by default
-2. **AI-assisted shipping** — architecture, docs, security review, and release hygiene with human verification
-3. **Full-stack craft** — auth, crypto, UI, deploy, and maintenance in one open-source system
+1. **Privacy in the AI era** — personal files stay on *your* VPS, not a third-party cloud by default  
+2. **AI-assisted shipping** — architecture, docs, security review, and release hygiene with human verification  
+3. **Full-stack craft** — auth, crypto, UI, deploy, and maintenance in one open-source system  
 
 Maintainer demo (private instance, not a shared sandbox): https://vault.vraxtal.site
 
 ## Source of truth
 
-All application code lives in **[vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault)**.  
-This folder documents the product *as part of* the INZ catalog — it is not a code mirror.
+| Want | Go here |
+|------|---------|
+| App source (`server.js`, routes, UI) | [vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault) |
+| Ecosystem catalog & CLI | [inz-ecosystem](https://github.com/fahnovinz/inz-ecosystem) |
+| Story / pitch | [docs/ecosystem.md](../../docs/ecosystem.md) |
+
+This directory **is not a code mirror** and will not grow into a nested clone of the vault.
