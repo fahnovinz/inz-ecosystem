@@ -27,4 +27,4 @@ foreach ($f in $files) {
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-Write-Host "OK — all local CI checks passed." -ForegroundColor Green
+Write-Host "OK - all local CI checks passed." -ForegroundColor Green
