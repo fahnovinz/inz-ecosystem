@@ -1,22 +1,57 @@
 # INZ Ecosystem
 
-Modular developer toolkit for GitHub analytics, repository health checks, and indie dev workflows.
-
-Built by [@fahnovinz](https://github.com/fahnovinz) (Fahrezi Nova Inzaghi).
+**Open-source indie platform** by [@fahnovinz](https://github.com/fahnovinz) — lightweight developer tools **and** a privacy-first flagship product.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-green.svg)](CHANGELOG.md)
+[![Flagship](https://img.shields.io/badge/flagship-VRAXTAL_VAULT-0ea5e9.svg)](https://github.com/fahnovinz/vraxtal-vault)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
 
-## Why INZ?
+```text
+  INZ Ecosystem
+  ├── Tools      inz stats · health · badges · products
+  └── Product ★  VRAXTAL VAULT — self-hosted encrypted personal vault
+```
 
-Most dev tools are either too heavy or too narrow. INZ Ecosystem sits in the middle — small, focused utilities you can run from terminal or script, with zero runtime dependencies.
+> **Story in one line:** build better open-source habits with CLI tools, and ship real privacy software people can run — [docs/ecosystem.md](docs/ecosystem.md).
 
-Everything is MIT-licensed and designed to be forked, extended, or plugged into your own workflow.
+---
 
-## Tools
+## Flagship product — VRAXTAL VAULT
+
+| | |
+|--|--|
+| **What** | Self-hosted personal vault for **documents, photos, video** |
+| **Why** | Your files, your VPS — encrypted at rest, not locked into a big-cloud silo |
+| **How** | AES-256-GCM · scrypt key wrap · localhost-only app · Cloudflare Tunnel ready |
+| **Repo** | **[fahnovinz/vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault)** |
+| **License** | MIT |
+
+```bash
+git clone https://github.com/fahnovinz/vraxtal-vault.git
+cd vraxtal-vault && npm ci && npm test
+# production-minded: deploy scripts, SECURITY.md, systemd helpers
+```
+
+**Highlights**
+
+- Master-password auth, session cookies, CSRF on mutating APIs  
+- Password-wrapped **AES-256-GCM** file encryption  
+- Drag-and-drop uploads, thumbnails, video preview, tags & pin  
+- Binds to **`127.0.0.1` only** — put TLS/tunnel in front  
+- Ubuntu VPS deploy + backup tooling  
+
+Product card: [packages/vraxtal-vault](packages/vraxtal-vault/) · Demo (maintainer-private): [vault.vraxtal.site](https://vault.vraxtal.site)
+
+---
+
+## Developer tools
+
+Zero runtime dependencies. Clone and run.
 
 | Command | What it does |
 |---------|--------------|
+| `inz products` | Catalog of ecosystem products & tools (JSON-ready) |
 | `inz stats` | Profile analytics — activity, PRs, portfolio breakdown |
 | `inz health` | Repo health score — README, license, CI, freshness |
 | `inz badges` | Generate shields.io badge markdown for any public repo |
@@ -29,8 +64,9 @@ Everything is MIT-licensed and designed to be forked, extended, or plugged into 
 git clone https://github.com/fahnovinz/inz-ecosystem.git
 cd inz-ecosystem
 
+node bin/inz.js products
 node bin/inz.js stats fahnovinz
-node bin/inz.js health fahnovinz/inz-ecosystem
+node bin/inz.js health fahnovinz/vraxtal-vault
 node bin/inz.js badges fahnovinz/inz-ecosystem
 ```
 
@@ -38,76 +74,99 @@ node bin/inz.js badges fahnovinz/inz-ecosystem
 
 ```powershell
 .\scripts\github-stats.ps1 -Username fahnovinz
-.\scripts\repo-health.ps1 -Repo fahnovinz/inz-ecosystem
+.\scripts\repo-health.ps1 -Repo fahnovinz/vraxtal-vault
 ```
 
-**JSON output** — pipe into your own tooling:
+**JSON** — pipe into your own tooling:
 
 ```bash
-node bin/inz.js health fahnovinz/inz-ecosystem --json
+node bin/inz.js products --json
+node bin/inz.js health fahnovinz/vraxtal-vault --json
 ```
 
-### Example output
+### Example — product catalog
 
-```
-  INZ Repo Health — fahnovinz/inz-ecosystem
+```text
+  INZ Ecosystem — Product Catalog
 
-  Score   85/100 (Good)
-  URL     https://github.com/fahnovinz/inz-ecosystem
+  ★ VRAXTAL VAULT  [flagship]
+    Self-hosted encrypted personal vault for documents, photos, and video
+    https://github.com/fahnovinz/vraxtal-vault
 
-  Checks
-  ✓ Repository description
-  ✓ README present
-  ✓ License declared
-  ...
+  • INZ Stats / Health / Badges
+    GitHub analytics and README polish utilities
 ```
 
 ### GitHub token (optional)
-
-Unauthenticated requests work but hit rate limits faster. Set a token for heavier usage:
 
 ```bash
 export GITHUB_TOKEN=ghp_xxxx   # macOS/Linux
 $env:GITHUB_TOKEN = "ghp_xxxx"  # Windows
 ```
 
+---
+
+## Why INZ? (portfolio / AI-event angle)
+
+Most portfolios stop at toy demos. INZ is built to show **coherent shipping**:
+
+| Pillar | What you see in the repos |
+|--------|---------------------------|
+| **Product vision** | Privacy-first self-hosting (Vault) + maintainer tooling |
+| **Security craft** | Crypto, sessions, CSRF, SECURITY.md, secret hygiene |
+| **Ops reality** | systemd, backups, tunnel edge, health checks |
+| **AI-ready workflow** | Public code + docs shaped for agentic coding *with* human verification |
+
+Deep dive: **[docs/ecosystem.md](docs/ecosystem.md)** — 30-second pitch, architecture diagram, talking points.
+
+---
+
 ## Project layout
 
-```
+```text
 inz-ecosystem/
-├── bin/inz.js              # CLI entry
-├── src/                    # Core modules
-├── scripts/                # PowerShell scripts (Windows-native)
-├── packages/               # Per-tool docs & future splits
-├── docs/                   # Guides
-└── test/                   # Lightweight tests
+├── bin/inz.js                 # CLI entry
+├── src/                       # Core modules (stats, health, badges, products)
+├── scripts/                   # PowerShell (Windows-native)
+├── packages/                  # Per-tool & product cards
+│   ├── vraxtal-vault/         # Flagship product card → separate repo
+│   ├── github-stats/
+│   ├── repo-health/
+│   └── badges/
+├── docs/
+│   ├── ecosystem.md           # Story for portfolios & AI events
+│   └── getting-started.md
+└── test/
 ```
 
 ## Roadmap
 
-- [x] GitHub profile analytics
-- [x] Repository health scoring
-- [x] Badge markdown generator
-- [x] JSON output mode
-- [ ] npm/PyPI registry stats
-- [ ] Batch health reports for orgs
-- [ ] INZ dotfiles collection
+- [x] GitHub profile analytics  
+- [x] Repository health scoring  
+- [x] Badge markdown generator  
+- [x] JSON output mode  
+- [x] Product catalog (`inz products`) + VRAXTAL VAULT as flagship  
+- [ ] npm/PyPI registry stats  
+- [ ] Batch health reports for orgs  
+- [ ] More VRAXTAL product surface (when ready)
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 
-PRs welcome — especially docs, new health checks, and platform support. Read [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+PRs welcome — docs, health checks, and platform support. Read [CONTRIBUTING.md](CONTRIBUTING.md).
 
-**Good first issues:** improve health scoring, add repo comparison, write more tests.
+**Good first issues:** improve health scoring, extend the product catalog, write more tests.
 
 ## Author
 
-**Fahrezi Nova Inzaghi** — indie developer building open tools for the community.
+**Fahrezi Nova Inzaghi** ([@fahnovinz](https://github.com/fahnovinz)) — indie developer, Indonesia.
 
-- GitHub: [@fahnovinz](https://github.com/fahnovinz)
-- Project: [inz-ecosystem](https://github.com/fahnovinz/inz-ecosystem)
+| | |
+|--|--|
+| Ecosystem | [inz-ecosystem](https://github.com/fahnovinz/inz-ecosystem) |
+| Flagship | [vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault) |
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) — tools and product cards here; Vault code is MIT in its own repository.

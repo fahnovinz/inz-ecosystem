@@ -3,10 +3,16 @@
 const { fetchGitHubStats } = require("../src/github-stats");
 const { fetchRepoHealth } = require("../src/repo-health");
 const { fetchRepoBadges } = require("../src/badges");
-const { printStatsReport, printHealthReport, printBadgesReport } = require("../src/report");
+const { listProducts } = require("../src/products");
+const {
+  printStatsReport,
+  printHealthReport,
+  printBadgesReport,
+  printProductsReport,
+} = require("../src/report");
 const { parseRepo } = require("../src/utils");
 
-const VERSION = "0.2.0";
+const VERSION = require("../package.json").version;
 const args = process.argv.slice(2);
 const command = args[0] || "help";
 
@@ -29,6 +35,7 @@ function printHelp() {
 inz — INZ Ecosystem CLI v${VERSION}
 
 Usage:
+  inz products                      List ecosystem products & tools
   inz stats <username>              Profile & portfolio analytics
   inz health <owner/repo>           Repository health score
   inz badges <owner/repo>           Generate README badge markdown
@@ -37,11 +44,13 @@ Usage:
 
 Options:
   --json                            Output as JSON
+  --kind product|tool               Filter products command
   --token <token>                   GitHub token (or set GITHUB_TOKEN)
 
 Examples:
+  inz products
   inz stats fahnovinz
-  inz health fahnovinz/inz-ecosystem
+  inz health fahnovinz/vraxtal-vault
   inz badges fahnovinz/inz-ecosystem --json
 `);
 }
@@ -64,6 +73,17 @@ async function main() {
 
   if (command === "version" || command === "-v") {
     console.log(`inz v${VERSION}`);
+    return;
+  }
+
+  if (command === "products" || command === "catalog") {
+    const kind = parseFlag("--kind");
+    if (kind && kind !== "product" && kind !== "tool") {
+      console.error('Error: --kind must be "product" or "tool".\n');
+      process.exit(1);
+    }
+    const catalog = listProducts(kind ? { kind } : {});
+    output(catalog, printProductsReport);
     return;
   }
 

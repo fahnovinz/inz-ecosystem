@@ -1,17 +1,26 @@
 # INZ Ecosystem Packages
 
-Each tool in the ecosystem lives here as a documented module. The root CLI (`bin/inz.js`) orchestrates them today; standalone npm packages may split out later.
+Documented modules and product cards. The root CLI (`bin/inz.js`) orchestrates tools; **products** may live in separate repositories and are catalogued here.
 
-| Package | Command | Status |
-|---------|---------|--------|
-| [github-stats](github-stats/) | `inz stats` | Stable |
-| [repo-health](repo-health/) | `inz health` | Stable |
-| [badges](badges/) | `inz badges` | Stable |
+| Package | Kind | Command / link | Status |
+|---------|------|----------------|--------|
+| [vraxtal-vault](vraxtal-vault/) | **Product** | [github.com/fahnovinz/vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault) | Flagship |
+| [github-stats](github-stats/) | Tool | `inz stats` | Stable |
+| [repo-health](repo-health/) | Tool | `inz health` | Stable |
+| [badges](badges/) | Tool | `inz badges` | Stable |
+
+Catalog from CLI:
+
+```bash
+node ../bin/inz.js products
+node ../bin/inz.js products --kind product --json
+```
 
 ## Adding a new package
 
 1. Create `packages/your-tool/README.md`
-2. Add module in `src/your-tool.js`
-3. Wire command in `bin/inz.js`
-4. Add tests in `test/`
-5. Update root README and CHANGELOG
+2. Add module in `src/your-tool.js` (or a product card if the code lives elsewhere)
+3. Register in `src/products.js` when it is part of the public catalog
+4. Wire command in `bin/inz.js` if needed
+5. Add tests in `test/`
+6. Update root README, `docs/ecosystem.md`, and CHANGELOG

@@ -1,7 +1,7 @@
 {
   "name": "inz-ecosystem",
-  "version": "0.2.0",
-  "description": "Modular open-source developer toolkit — GitHub analytics, repo health, and indie dev utilities",
+  "version": "0.3.0",
+  "description": "INZ Ecosystem — modular indie platform: GitHub developer tools + VRAXTAL VAULT flagship product",
   "license": "MIT",
   "author": "fahnovinz",
   "repository": {
@@ -21,7 +21,11 @@
     "cli",
     "inz-ecosystem",
     "indie-dev",
-    "badges"
+    "badges",
+    "vraxtal-vault",
+    "privacy",
+    "self-hosted",
+    "ecosystem"
   ],
   "bin": {
     "inz": "./bin/inz.js"

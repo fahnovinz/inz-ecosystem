@@ -24,6 +24,18 @@ export PATH="$PATH:/path/to/inz-ecosystem/bin"
 
 ## Commands
 
+### `inz products`
+
+Lists the ecosystem catalog: **flagship product** (VRAXTAL VAULT) and CLI tools.
+
+```bash
+node bin/inz.js products
+node bin/inz.js products --kind product
+node bin/inz.js products --json
+```
+
+See also [ecosystem.md](ecosystem.md) for the portfolio / AI-event narrative.
+
 ### `inz stats <username>`
 
 Pulls public data from the GitHub API:
@@ -84,8 +96,18 @@ $env:GITHUB_TOKEN = "ghp_your_token_here"
 
 Create a token at https://github.com/settings/tokens — `public_repo` scope is enough.
 
+## Flagship product
+
+VRAXTAL VAULT lives in a **separate repo** (keeps secrets/deploy boundaries clean):
+
+```bash
+git clone https://github.com/fahnovinz/vraxtal-vault.git
+node bin/inz.js health fahnovinz/vraxtal-vault
+```
+
 ## Next steps
 
+- Read [ecosystem.md](ecosystem.md) for the product story
+- Check `packages/` for per-module and product cards
 - Open an issue if you want a new tool in the ecosystem
-- Check `packages/` for per-module documentation
 - Read [CONTRIBUTING.md](../CONTRIBUTING.md) to add a health check or CLI command

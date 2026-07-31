@@ -60,4 +60,47 @@ function printBadgesReport(report) {
   console.log("");
 }
 
-module.exports = { printStatsReport, printHealthReport, printBadgesReport };
+function printProductsReport(catalog) {
+  console.log("\n  INZ Ecosystem — Product Catalog\n");
+  console.log(`  ${catalog.homepage}`);
+  console.log(
+    `  ${catalog.summary.products} product(s) · ${catalog.summary.tools} tool(s) · v${catalog.version}`
+  );
+  console.log("");
+
+  const products = catalog.products.filter((p) => p.kind === "product");
+  const tools = catalog.products.filter((p) => p.kind === "tool");
+
+  if (products.length) {
+    console.log("  Flagship product");
+    for (const p of products) {
+      console.log(`  ★ ${p.name}  [${p.status}]`);
+      console.log(`    ${p.tagline}`);
+      console.log(`    ${p.url}`);
+      if (p.stack?.length) console.log(`    Stack  ${p.stack.join(" · ")}`);
+      for (const h of p.highlights || []) {
+        console.log(`    · ${h}`);
+      }
+      console.log("");
+    }
+  }
+
+  if (tools.length) {
+    console.log("  Developer tools");
+    for (const p of tools) {
+      console.log(`  • ${p.name}`);
+      console.log(`    ${p.tagline}`);
+      if (p.command) console.log(`    $ ${p.command}`);
+      console.log("");
+    }
+  }
+
+  console.log("  Tip: inz health fahnovinz/vraxtal-vault\n");
+}
+
+module.exports = {
+  printStatsReport,
+  printHealthReport,
+  printBadgesReport,
+  printProductsReport,
+};
