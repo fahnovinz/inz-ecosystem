@@ -86,7 +86,7 @@
     var rand = rng(20260911);
     var out = [];
     var today = startOfDay(new Date());
-    for (var back = 181; back >= 0; back--) {
+    for (var back = 363; back >= 0; back--) {
       var date = new Date(today.getTime() - back * DAY);
       var weekend = date.getDay() === 0 || date.getDay() === 6;
       if (rand() < (weekend ? 0.28 : 0.34)) continue;
@@ -113,7 +113,7 @@
     var rand = rng(777);
     var out = {};
     var today = startOfDay(new Date());
-    for (var back = 181; back >= 1; back--) {
+    for (var back = 363; back >= 1; back--) {
       out[dateKey(new Date(today.getTime() - back * DAY))] = rand() < 0.72 ? "hemat" : "boros";
     }
     return out;
@@ -644,7 +644,7 @@
     $("settings-btn").addEventListener("click", function () {
       $("f-name").value = state.name || "";
       $("settings-state").textContent = state.demo
-        ? "Sekarang menampilkan data contoh 26 minggu."
+        ? "Sekarang menampilkan data contoh satu tahun."
         : idr.format(state.entries.length) + " catatan tersimpan di perangkat ini.";
       open($("settings-dlg"));
     });
