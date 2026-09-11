@@ -5,7 +5,7 @@ All notable changes to INZ Ecosystem are documented here.
 ## [Unreleased]
 
 ### Added
-- **VRAX Spend Tracking** (`packages/vrax-spend-tracking/`) — static daily spend tracker: budget watch, hemat/boros tally, 26-week spend map, monthly budget bar, and a deletable transaction log. Dependency-free, data kept in `localStorage`, light + dark themes
+- **VRAX Spend Tracking** (`packages/vrax-spend-tracking/`) — static daily spend tracker built as a mobile app shell: sticky app bar, three tabs (Beranda / Riwayat / Catatan), floating add button, and bottom-sheet forms. Today's budget bar, hemat/boros tally, 3- or 6-month spend map, monthly budget progress, and a day-grouped transaction log. Dependency-free, data kept in `localStorage`, light + dark themes, safe-area aware
 - `vrax-spend-tracking` registered in the product catalog (`inz products`)
 
 ## [0.3.2] — 2026-07-31

@@ -1,5 +1,5 @@
 /* VRAX Spend Tracking — daily spend tracker.
-   Everything lives in localStorage; nothing leaves the browser. */
+   Everything lives in localStorage; nothing leaves the device. */
 
 (function () {
   "use strict";
@@ -7,6 +7,7 @@
   var KEY = "vrax-spend:v1";
   var THEME_KEY = "vrax-spend:theme";
   var DAY = 86400000;
+  var DAYS_PER_PAGE = 10;
 
   var CATEGORIES = [
     { id: "makan",     emoji: "🍜", label: "Makan" },
@@ -17,18 +18,23 @@
     { id: "lainnya",   emoji: "✨", label: "Lainnya" }
   ];
 
+  var state = null;
+  var weeks = 13;
+  var daysShown = DAYS_PER_PAGE;
+  var chosenCat = "makan";
+  var screen = "home";
+
   var $ = function (id) { return document.getElementById(id); };
 
-  /* ---------- storage ---------- */
+  /* ───────── storage ───────── */
 
   function read(key) {
     try { return window.localStorage.getItem(key); } catch (e) { return null; }
   }
+
   function write(key, value) {
     try { window.localStorage.setItem(key, value); } catch (e) { /* private mode */ }
   }
-
-  var state = null;
 
   function load() {
     var raw = read(KEY);
@@ -42,14 +48,17 @@
         }
       } catch (e) { /* fall through to a fresh seed */ }
     }
-    return { entries: seed(), budget: { daily: 150000, monthly: 4500000 }, verdicts: seedVerdicts(), demo: true };
+    return {
+      entries: seed(),
+      budget: { daily: 150000, monthly: 4500000 },
+      verdicts: seedVerdicts(),
+      demo: true
+    };
   }
 
-  function save() {
-    write(KEY, JSON.stringify(state));
-  }
+  function save() { write(KEY, JSON.stringify(state)); }
 
-  /* ---------- demo data (deterministic, so the page looks alive on first open) ---------- */
+  /* ───────── demo data, so the app opens in a working state ───────── */
 
   function rng(seedValue) {
     var a = seedValue >>> 0;
@@ -77,17 +86,16 @@
     for (var back = 181; back >= 0; back--) {
       var date = new Date(today.getTime() - back * DAY);
       var weekend = date.getDay() === 0 || date.getDay() === 6;
-      if (rand() < (weekend ? 0.28 : 0.34)) continue; // quiet days keep the map honest
+      if (rand() < (weekend ? 0.28 : 0.34)) continue;
       var count = 1 + Math.floor(rand() * (weekend ? 3 : 2.4));
       var pool = back <= 1 ? CATEGORIES.slice(0, 2) : CATEGORIES;
       for (var i = 0; i < count; i++) {
         var cat = pool[Math.floor(rand() * pool.length)];
         var notes = SEED_NOTES[cat.id];
         var base = cat.id === "tagihan" ? 180000 : cat.id === "belanja" ? 120000 : 28000;
-        var amount = Math.round((base + rand() * base * 2.4) / 500) * 500;
         out.push({
           id: "d" + back + "-" + i,
-          amount: amount,
+          amount: Math.round((base + rand() * base * 2.4) / 500) * 500,
           cat: cat.id,
           note: notes[Math.floor(rand() * notes.length)],
           date: dateKey(date),
@@ -103,20 +111,19 @@
     var out = {};
     var today = startOfDay(new Date());
     for (var back = 181; back >= 1; back--) {
-      var key = dateKey(new Date(today.getTime() - back * DAY));
-      out[key] = rand() < 0.72 ? "hemat" : "boros";
+      out[dateKey(new Date(today.getTime() - back * DAY))] = rand() < 0.72 ? "hemat" : "boros";
     }
     return out;
   }
 
-  /* ---------- dates + money ---------- */
+  /* ───────── dates + money ───────── */
 
   function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 
   function dateKey(d) {
-    var m = String(d.getMonth() + 1).padStart(2, "0");
-    var day = String(d.getDate()).padStart(2, "0");
-    return d.getFullYear() + "-" + m + "-" + day;
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
   }
 
   function fromKey(key) {
@@ -125,6 +132,9 @@
   }
 
   var idr = new Intl.NumberFormat("id-ID");
+  var DAY_FMT = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  var STAMP_FMT = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
+  var TIME_FMT = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" });
 
   function money(n) { return "Rp " + idr.format(Math.round(n)); }
 
@@ -134,25 +144,13 @@
     return money(n);
   }
 
-  var DATE_FMT = new Intl.DateTimeFormat("id-ID", {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
-  });
-
-  var DAY_FMT = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" });
-
-  function stamp(ts) { return DATE_FMT.format(new Date(ts)) + " WIB"; }
-
-  function relative(ts) {
-    var mins = Math.round((Date.now() - ts) / 60000);
-    if (mins < 2) return "baru saja";
-    if (mins < 60) return mins + " menit lalu";
-    var hours = Math.round(mins / 60);
-    if (hours < 24) return hours + " jam lalu";
-    var days = Math.floor((startOfDay(new Date()) - startOfDay(new Date(ts))) / DAY);
-    if (days <= 1) return "kemarin";
-    if (days < 7) return days + " hari lalu";
-    var weeks = Math.floor(days / 7);
-    return weeks === 1 ? "1 minggu lalu" : weeks + " minggu lalu";
+  function dayLabel(key) {
+    var today = startOfDay(new Date()).getTime();
+    var diff = Math.round((today - fromKey(key).getTime()) / DAY);
+    if (diff === 0) return "Hari ini";
+    if (diff === 1) return "Kemarin";
+    if (diff < 7) return diff + " hari lalu";
+    return DAY_FMT.format(fromKey(key));
   }
 
   function categoryOf(id) {
@@ -160,111 +158,17 @@
     return CATEGORIES[CATEGORIES.length - 1];
   }
 
-  /* ---------- derived numbers ---------- */
+  /* ───────── derived ───────── */
 
   function totalsByDay() {
     var map = Object.create(null);
-    state.entries.forEach(function (e) {
-      map[e.date] = (map[e.date] || 0) + e.amount;
-    });
+    state.entries.forEach(function (e) { map[e.date] = (map[e.date] || 0) + e.amount; });
     return map;
   }
 
   function sorted() {
     return state.entries.slice().sort(function (a, b) { return b.ts - a.ts; });
   }
-
-  /* ---------- rendering ---------- */
-
-  var expanded = false;
-
-  function render() {
-    var today = dateKey(new Date());
-    var byDay = totalsByDay();
-    var todayTotal = byDay[today] || 0;
-    var daily = state.budget.daily || 1;
-
-    // budget watch
-    var pct = Math.round((todayTotal / daily) * 100);
-    $("watch-pct").textContent = pct + "%";
-    var left = daily - todayTotal;
-    $("watch-sub").textContent = (left >= 0 ? "Sisa " + money(left) : "Lewat " + money(-left)) +
-      " · dari " + money(daily) + " · reset 00:00 WIB";
-
-    var todayEntries = state.entries.filter(function (e) { return e.date === today; });
-    if (todayEntries.length) {
-      var top = todayEntries.reduce(function (a, b) { return b.amount > a.amount ? b : a; });
-      var cat = categoryOf(top.cat);
-      $("top-note").textContent = cat.emoji + " " + cat.label + " — " + (top.note || "tanpa catatan");
-      $("top-amount").textContent = money(top.amount);
-    } else {
-      $("top-note").textContent = "Belum ada catatan hari ini. Tekan “catat pengeluaran” untuk mulai.";
-      $("top-amount").textContent = money(0);
-    }
-
-    // verdict tally
-    var hemat = 0, boros = 0;
-    Object.keys(state.verdicts).forEach(function (k) {
-      if (state.verdicts[k] === "hemat") hemat++;
-      else if (state.verdicts[k] === "boros") boros++;
-    });
-    $("c-hemat").textContent = idr.format(hemat);
-    $("c-boros").textContent = idr.format(boros);
-    var todayVerdict = state.verdicts[today] || null;
-    $("v-hemat").setAttribute("aria-pressed", String(todayVerdict === "hemat"));
-    $("v-boros").setAttribute("aria-pressed", String(todayVerdict === "boros"));
-    $("verdict-state").textContent = todayVerdict
-      ? "Tersimpan · hari ini ditandai " + todayVerdict
-      : "Belum dinilai";
-
-    // latest expense
-    var list = sorted();
-    if (list.length) {
-      $("latest-rel").textContent = relative(list[0].ts);
-      $("latest-date").textContent = stamp(list[0].ts);
-    } else {
-      $("latest-rel").textContent = "belum ada";
-      $("latest-date").textContent = "Catat transaksi pertamamu →";
-    }
-    $("today-total").textContent = money(todayTotal);
-
-    // stat tiles
-    var activeDays = Object.keys(byDay).length;
-    var grand = state.entries.reduce(function (sum, e) { return sum + e.amount; }, 0);
-    var biggest = state.entries.reduce(function (m, e) { return Math.max(m, e.amount); }, 0);
-    $("s-count").textContent = idr.format(state.entries.length);
-    $("s-avg").textContent = activeDays ? moneyShort(grand / activeDays) : money(0);
-    $("s-max").textContent = biggest ? moneyShort(biggest) : money(0);
-
-    renderMonthlyBudget(byDay);
-    renderHeat(byDay);
-    renderLog(list);
-  }
-
-  function renderMonthlyBudget(byDay) {
-    var now = new Date();
-    var prefix = dateKey(now).slice(0, 7);
-    var used = 0;
-    Object.keys(byDay).forEach(function (k) { if (k.indexOf(prefix) === 0) used += byDay[k]; });
-
-    var cap = state.budget.monthly || 1;
-    var ratio = Math.min(used / cap, 1);
-    var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    var daysLeft = lastDay - now.getDate() + 1;
-
-    $("budget-fill").style.width = (ratio * 100).toFixed(1) + "%";
-    $("budget-used").textContent = money(used);
-    $("budget-cap").textContent = money(cap);
-    $("budget-track").setAttribute("aria-label",
-      "Budget bulanan terpakai " + Math.round(ratio * 100) + " persen");
-    $("budget-left-days").textContent = "sisa " + daysLeft + " hari";
-    $("budget-state").textContent = used > cap
-      ? "lewat " + money(used - cap)
-      : "aman " + money(cap - used) + " · " + moneyShort((cap - used) / daysLeft) + "/hari";
-  }
-
-  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  var DAY_NAMES = ["Sen", "", "Rab", "", "Jum", "", "Min"];
 
   function level(total) {
     var daily = state.budget.daily || 1;
@@ -274,34 +178,127 @@
     return 3;
   }
 
+  /* ───────── render ───────── */
+
+  function render() {
+    var today = dateKey(new Date());
+    var byDay = totalsByDay();
+    var list = sorted();
+
+    $("daystamp").textContent = STAMP_FMT.format(new Date()).toUpperCase();
+
+    renderHero(byDay[today] || 0);
+    renderRecent(list);
+    renderVerdict(today);
+    renderStats(byDay);
+    renderMonthly(byDay);
+    renderHeat(byDay);
+    renderLog(list);
+  }
+
+  function renderHero(todayTotal) {
+    var daily = state.budget.daily || 1;
+    var ratio = todayTotal / daily;
+    var fill = $("hero-fill");
+
+    $("today-total").textContent = money(todayTotal);
+    fill.style.width = Math.min(ratio, 1) * 100 + "%";
+    fill.className = ratio > 1 ? "over" : "";
+
+    if (!todayTotal) {
+      $("hero-sub").textContent = "Belum ada pengeluaran. Budget " + money(daily) + " utuh.";
+    } else if (ratio > 1) {
+      $("hero-sub").innerHTML = "Lewat <b>" + money(todayTotal - daily) + "</b> dari budget " + money(daily);
+    } else {
+      $("hero-sub").innerHTML = Math.round(ratio * 100) + "% kepakai · sisa <b>" +
+        money(daily - todayTotal) + "</b>";
+    }
+  }
+
+  function renderRecent(list) {
+    var box = $("recent");
+    box.textContent = "";
+    if (!list.length) {
+      box.appendChild(emptyNote("Belum ada catatan. Tekan tombol + untuk mulai."));
+      return;
+    }
+    list.slice(0, 3).forEach(function (entry) { box.appendChild(row(entry, true)); });
+  }
+
+  function renderVerdict(today) {
+    var hemat = 0, boros = 0;
+    Object.keys(state.verdicts).forEach(function (k) {
+      if (state.verdicts[k] === "hemat") hemat++;
+      else if (state.verdicts[k] === "boros") boros++;
+    });
+
+    var chosen = state.verdicts[today] || null;
+    $("v-hemat").setAttribute("aria-pressed", String(chosen === "hemat"));
+    $("v-boros").setAttribute("aria-pressed", String(chosen === "boros"));
+    $("verdict-state").textContent = idr.format(hemat) + " hari hemat · " +
+      idr.format(boros) + " hari boros";
+  }
+
+  function renderStats(byDay) {
+    var activeDays = Object.keys(byDay).length;
+    var grand = state.entries.reduce(function (sum, e) { return sum + e.amount; }, 0);
+    var biggest = state.entries.reduce(function (m, e) { return Math.max(m, e.amount); }, 0);
+
+    $("s-count").textContent = idr.format(state.entries.length);
+    $("s-avg").textContent = activeDays ? moneyShort(grand / activeDays) : money(0);
+    $("s-max").textContent = biggest ? moneyShort(biggest) : money(0);
+  }
+
+  function renderMonthly(byDay) {
+    var now = new Date();
+    var prefix = dateKey(now).slice(0, 7);
+    var used = 0;
+    Object.keys(byDay).forEach(function (k) { if (k.indexOf(prefix) === 0) used += byDay[k]; });
+
+    var cap = state.budget.monthly || 1;
+    var ratio = used / cap;
+    var daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() + 1;
+    var fill = $("budget-fill");
+
+    fill.style.width = Math.min(ratio, 1) * 100 + "%";
+    fill.className = ratio > 1 ? "over" : "";
+    $("budget-used").textContent = money(used);
+    $("budget-cap").textContent = money(cap);
+    $("budget-left-days").textContent = "sisa " + daysLeft + " hari";
+    $("budget-track").setAttribute("aria-label",
+      "Budget bulanan terpakai " + Math.round(ratio * 100) + " persen");
+    $("budget-state").textContent = used > cap
+      ? "lewat " + money(used - cap)
+      : "aman · sisa " + moneyShort((cap - used) / daysLeft) + " per hari";
+  }
+
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  var DAY_NAMES = ["Sen", "", "Rab", "", "Jum", "", "Min"];
+
   function renderHeat(byDay) {
     var heat = $("heat");
     heat.textContent = "";
 
     var today = startOfDay(new Date());
-    // Monday-first grid: walk back to the Monday 25 weeks before this week.
-    var offset = (today.getDay() + 6) % 7;
-    var thisMonday = new Date(today.getTime() - offset * DAY);
-    var start = new Date(thisMonday.getTime() - 25 * 7 * DAY);
+    var thisMonday = new Date(today.getTime() - ((today.getDay() + 6) % 7) * DAY);
+    var start = new Date(thisMonday.getTime() - (weeks - 1) * 7 * DAY);
 
-    var nameCol = document.createDocumentFragment();
-    var corner = document.createElement("span"); // masks scrolled cells above the day names
+    var corner = document.createElement("span");
     corner.className = "heat-dayname";
-    nameCol.appendChild(corner);
+    heat.appendChild(corner);
     DAY_NAMES.forEach(function (name) {
       var el = document.createElement("span");
       el.className = "heat-dayname";
       el.textContent = name;
-      nameCol.appendChild(el);
+      heat.appendChild(el);
     });
-    heat.appendChild(nameCol);
 
     var lastMonth = -1;
-    for (var week = 0; week < 26; week++) {
+    for (var week = 0; week < weeks; week++) {
       var monday = new Date(start.getTime() + week * 7 * DAY);
+      var sunday = new Date(monday.getTime() + 6 * DAY);
       var monthLabel = document.createElement("span");
       monthLabel.className = "heat-month";
-      var sunday = new Date(monday.getTime() + 6 * DAY);
       if (sunday.getMonth() !== lastMonth) {
         lastMonth = sunday.getMonth();
         monthLabel.textContent = MONTHS[lastMonth];
@@ -324,8 +321,12 @@
       }
     }
 
-    // the newest weeks are the point — start scrolled to today
-    var scroller = heat.parentNode;
+    heat.setAttribute("aria-label", "Peta pengeluaran " + weeks + " minggu terakhir");
+    scrollHeatToToday();
+  }
+
+  function scrollHeatToToday() {
+    var scroller = $("heat").parentNode;
     scroller.scrollLeft = scroller.scrollWidth;
   }
 
@@ -334,85 +335,125 @@
     log.textContent = "";
 
     if (!list.length) {
-      var empty = document.createElement("p");
-      empty.className = "empty";
-      empty.textContent = "Belum ada catatan. Semua yang kamu simpan muncul di sini.";
-      log.appendChild(empty);
+      var card = document.createElement("div");
+      card.className = "card";
+      card.appendChild(emptyNote("Belum ada catatan. Semua yang kamu simpan muncul di sini."));
+      log.appendChild(card);
       $("more-btn").hidden = true;
       return;
     }
 
-    var shown = expanded ? list : list.slice(0, 3);
-    shown.forEach(function (entry) {
-      log.appendChild(bubble(entry));
+    var order = [];
+    var groups = Object.create(null);
+    list.forEach(function (entry) {
+      if (!groups[entry.date]) { groups[entry.date] = []; order.push(entry.date); }
+      groups[entry.date].push(entry);
     });
 
-    $("more-btn").hidden = list.length <= 3;
-    $("more-btn").textContent = expanded
-      ? "Tampilkan lebih sedikit ↑"
-      : "Tampilkan semua " + idr.format(list.length) + " catatan ↓";
+    order.slice(0, daysShown).forEach(function (key) {
+      var group = document.createElement("section");
+      group.className = "daygroup";
+
+      var head = document.createElement("div");
+      head.className = "daygroup-head";
+      var pill = document.createElement("span");
+      pill.className = "pill-when";
+      pill.textContent = dayLabel(key);
+      var sum = document.createElement("span");
+      sum.className = "meta num";
+      sum.textContent = money(groups[key].reduce(function (s, e) { return s + e.amount; }, 0));
+      head.appendChild(pill);
+      head.appendChild(sum);
+      group.appendChild(head);
+
+      var card = document.createElement("div");
+      card.className = "card";
+      var rows = document.createElement("div");
+      rows.className = "rows";
+      groups[key].forEach(function (entry) { rows.appendChild(row(entry, false)); });
+      card.appendChild(rows);
+      group.appendChild(card);
+
+      log.appendChild(group);
+    });
+
+    $("more-btn").hidden = order.length <= daysShown;
   }
 
-  function bubble(entry) {
+  function emptyNote(text) {
+    var p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = text;
+    return p;
+  }
+
+  function row(entry, compact) {
     var cat = categoryOf(entry.cat);
 
-    var row = document.createElement("div");
-    row.className = "entry";
+    var el = document.createElement("div");
+    el.className = "row";
 
-    var avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = cat.emoji;
-    row.appendChild(avatar);
+    var emoji = document.createElement("span");
+    emoji.className = "row-emoji";
+    emoji.setAttribute("aria-hidden", "true");
+    emoji.textContent = cat.emoji;
+    el.appendChild(emoji);
 
-    var box = document.createElement("div");
-    box.className = "bubble";
+    var body = document.createElement("div");
+    body.className = "row-body";
+    var title = document.createElement("b");
+    title.textContent = entry.note || cat.label;
+    var sub = document.createElement("span");
+    var isToday = entry.date === dateKey(new Date());
+    sub.textContent = compact && !isToday
+      ? cat.label + " · " + dayLabel(entry.date).toLowerCase()
+      : cat.label + " · " + TIME_FMT.format(new Date(entry.ts));
+    body.appendChild(title);
+    body.appendChild(sub);
+    el.appendChild(body);
 
-    var top = document.createElement("div");
-    top.className = "bubble-top";
-    var pill = document.createElement("span");
-    pill.className = "pill-when";
-    pill.textContent = relative(entry.ts);
-    var when = document.createElement("span");
-    when.className = "meta";
-    when.textContent = stamp(entry.ts);
-    top.appendChild(pill);
-    top.appendChild(when);
-    box.appendChild(top);
-
-    var text = document.createElement("p");
-    text.className = "bubble-text";
-    var amount = document.createElement("b");
+    var amount = document.createElement("span");
+    amount.className = "row-amount";
     amount.textContent = money(entry.amount);
-    text.appendChild(amount);
-    text.appendChild(document.createTextNode(" · " + cat.label + (entry.note ? " — " + entry.note : "")));
-    box.appendChild(text);
+    el.appendChild(amount);
 
-    var foot = document.createElement("div");
-    foot.className = "bubble-foot";
-    var del = document.createElement("button");
-    del.className = "link";
-    del.type = "button";
-    del.textContent = "Hapus catatan ✕";
-    del.addEventListener("click", function () {
-      state.entries = state.entries.filter(function (e) { return e.id !== entry.id; });
-      state.demo = false;
-      save();
-      render();
-    });
-    foot.appendChild(del);
-    box.appendChild(foot);
+    if (!compact) {
+      var del = document.createElement("button");
+      del.className = "row-del";
+      del.type = "button";
+      del.textContent = "✕";
+      del.setAttribute("aria-label", "Hapus " + (entry.note || cat.label) + " " + money(entry.amount));
+      del.addEventListener("click", function () {
+        state.entries = state.entries.filter(function (e) { return e.id !== entry.id; });
+        state.demo = false;
+        save();
+        render();
+      });
+      el.appendChild(del);
+    }
 
-    row.appendChild(box);
-    return row;
+    return el;
   }
 
-  /* ---------- dialogs ---------- */
+  /* ───────── navigation + sheets ───────── */
+
+  function showScreen(name) {
+    screen = name;
+    ["home", "history", "log"].forEach(function (id) {
+      $("screen-" + id).hidden = id !== name;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
+      tab.setAttribute("aria-selected", String(tab.dataset.screen === name));
+    });
+    window.scrollTo({ top: 0, behavior: "auto" });
+    if (name === "history") scrollHeatToToday();
+  }
 
   function open(dlg) {
     if (dlg.showModal) dlg.showModal();
     else dlg.setAttribute("open", "");
   }
+
   function close(dlg) {
     if (dlg.close) dlg.close();
     else dlg.removeAttribute("open");
@@ -422,8 +463,6 @@
     var n = Number(String(value).replace(/[^\d]/g, ""));
     return isFinite(n) ? n : 0;
   }
-
-  var chosenCat = "makan";
 
   function buildChips() {
     var box = $("f-chips");
@@ -443,7 +482,7 @@
     });
   }
 
-  /* ---------- wiring ---------- */
+  /* ───────── wiring ───────── */
 
   function init() {
     state = load();
@@ -458,12 +497,28 @@
       var root = document.documentElement;
       var current = root.getAttribute("data-theme");
       if (!current) {
-        var systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-        current = systemDark ? "dark" : "light";
+        current = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark" : "light";
       }
       var next = current === "dark" ? "light" : "dark";
       root.setAttribute("data-theme", next);
       write(THEME_KEY, next);
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
+      tab.addEventListener("click", function () { showScreen(tab.dataset.screen); });
+    });
+
+    $("to-log").addEventListener("click", function () { showScreen("log"); });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (seg) {
+      seg.addEventListener("click", function () {
+        weeks = Number(seg.dataset.weeks);
+        Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (other) {
+          other.setAttribute("aria-pressed", String(other === seg));
+        });
+        renderHeat(totalsByDay());
+      });
     });
 
     $("add-btn").addEventListener("click", function () {
@@ -499,7 +554,7 @@
       render();
     });
 
-    $("budget-btn").addEventListener("click", function () {
+    $("edit-budget").addEventListener("click", function () {
       $("f-daily").value = idr.format(state.budget.daily);
       $("f-monthly").value = idr.format(state.budget.monthly);
       open($("budget-dlg"));
@@ -519,39 +574,37 @@
 
     function setVerdict(value) {
       var today = dateKey(new Date());
-      state.verdicts[today] = state.verdicts[today] === value ? undefined : value;
-      if (!state.verdicts[today]) delete state.verdicts[today];
+      if (state.verdicts[today] === value) delete state.verdicts[today];
+      else state.verdicts[today] = value;
       save();
       render();
     }
 
     $("more-btn").addEventListener("click", function () {
-      expanded = !expanded;
+      daysShown += DAYS_PER_PAGE;
       render();
-      if (!expanded) $("log").scrollIntoView({ block: "start", behavior: "smooth" });
     });
 
-    $("jump-log").addEventListener("click", function () {
-      $("log").scrollIntoView({ block: "start", behavior: "smooth" });
+    $("settings-btn").addEventListener("click", function () {
+      $("settings-state").textContent = state.demo
+        ? "Sekarang menampilkan data contoh 26 minggu."
+        : idr.format(state.entries.length) + " catatan tersimpan di perangkat ini.";
+      open($("settings-dlg"));
     });
 
-    $("about-btn").addEventListener("click", function () {
-      $("about-seed").textContent = state.demo
-        ? "Sekarang menampilkan data contoh 26 minggu. Hapus lewat “mulai dari nol” kapan saja."
-        : "Menampilkan datamu sendiri — " + idr.format(state.entries.length) + " catatan tersimpan.";
-      open($("about-dlg"));
-    });
-    $("about-close").addEventListener("click", function () { close($("about-dlg")); });
+    $("settings-close").addEventListener("click", function () { close($("settings-dlg")); });
 
     $("wipe-btn").addEventListener("click", function () {
       if (!window.confirm("Hapus semua catatan dan mulai dari nol?")) return;
       state = { entries: [], budget: state.budget, verdicts: {}, demo: false };
-      expanded = false;
+      daysShown = DAYS_PER_PAGE;
+      close($("settings-dlg"));
       save();
       render();
     });
 
     render();
+    showScreen("home");
   }
 
   if (document.readyState === "loading") {

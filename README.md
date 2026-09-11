@@ -51,7 +51,7 @@ Product card: [packages/vraxtal-vault](packages/vraxtal-vault/) · Demo (maintai
 
 | | |
 |--|--|
-| **What** | Single-page daily spend tracker — budget watch, 26-week spend map, transaction log |
+| **What** | Daily spend tracker shaped as a mobile app — three tabs, floating add button, bottom sheets |
 | **Why** | See where the day's money went without a signup, an app store, or a server |
 | **How** | Static HTML/CSS/JS, zero dependencies, everything kept in `localStorage` |
 | **Folder** | **[packages/vrax-spend-tracking](packages/vrax-spend-tracking/)** |
@@ -61,7 +61,7 @@ cd packages/vrax-spend-tracking
 python3 -m http.server 8080   # → http://localhost:8080
 ```
 
-Light and dark themes, Indonesian copy, rupiah formatting. Open it once and the page seeds 26 weeks of example data so the map and stats read immediately — clear it with **mulai dari nol** in the footer.
+Light and dark themes, Indonesian copy, rupiah formatting, safe-area aware. Open it once and the app seeds 26 weeks of example data so the map and stats read immediately — clear it under **Pengaturan → Mulai dari nol**.
 
 ---
 
