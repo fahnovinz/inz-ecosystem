@@ -233,6 +233,7 @@ button, input, select { font: inherit; color: inherit; }
   padding-bottom: calc(132px + env(safe-area-inset-bottom));
 }
 .screen::-webkit-scrollbar { display: none; }
+.screen > * { flex: none; }
 
 .hello { display: flex; flex-direction: column; gap: 3px; }
 
@@ -426,7 +427,13 @@ button, input, select { font: inherit; color: inherit; }
 
 /* ───────── heat map ───────── */
 
-.heat-card { padding-left: 0; padding-right: 14px; overflow-x: auto; overscroll-behavior-x: contain; }
+.heat-card {
+  padding-left: 0;
+  padding-right: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+}
 .heat {
   display: grid;
   grid-auto-flow: column;
