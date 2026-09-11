@@ -471,15 +471,28 @@
     });
   }
 
+  // While a tap-driven scroll is in flight the pager passes over the panels in
+  // between; without this lock the scroll listener would drag the highlight
+  // backwards and then walk it across every tab.
+  var navLocked = false;
+  var navTimer = null;
+
+  function lockTabs(ms) {
+    navLocked = true;
+    window.clearTimeout(navTimer);
+    navTimer = window.setTimeout(function () { navLocked = false; }, ms);
+  }
+
   function showScreen(name, smooth) {
     var index = SCREENS.indexOf(name);
     if (index < 0) return;
     var pager = $("pager");
+    var jump = Math.abs(index - SCREENS.indexOf(activeScreen)) > 1;
+    var instant = smooth === false || jump || reducedMotion();
+
     markTab(name);
-    pager.scrollTo({
-      left: index * pager.clientWidth,
-      behavior: smooth === false || reducedMotion() ? "auto" : "smooth"
-    });
+    lockTabs(instant ? 80 : 600);
+    pager.scrollTo({ left: index * pager.clientWidth, behavior: instant ? "auto" : "smooth" });
   }
 
   // A swipe moves the pager; the tab bar follows whatever panel it settles on.
@@ -487,8 +500,10 @@
     var pager = $("pager");
     var frame = null;
 
+    pager.addEventListener("scrollend", function () { navLocked = false; });
+
     pager.addEventListener("scroll", function () {
-      if (frame) return;
+      if (navLocked || frame) return;
       frame = window.requestAnimationFrame(function () {
         frame = null;
         var width = pager.clientWidth || 1;
@@ -588,7 +603,7 @@
       $("f-date").value = dateKey(new Date());
       $("f-error").hidden = true;
       open($("add-dlg"));
-      $("f-amount").focus();
+      $("f-amount").focus({ preventScroll: true });
     });
 
     $("add-cancel").addEventListener("click", function () { close($("add-dlg")); });

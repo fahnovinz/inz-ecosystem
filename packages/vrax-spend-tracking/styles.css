@@ -624,6 +624,8 @@ button, input, select { font: inherit; color: inherit; }
 dialog {
   width: min(var(--app), 100%);
   max-width: 100%;
+  max-height: 88vh;
+  max-height: 88dvh;
   margin: auto auto 0;
   padding: 0;
   border: 0;
@@ -633,19 +635,43 @@ dialog {
   color: var(--ink);
 }
 dialog::backdrop { background: rgba(12, 10, 6, .58); }
-dialog[open] { animation: rise .22s ease-out; }
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: rise .2s ease-out;
+}
 @keyframes rise { from { transform: translateY(18px); opacity: .4; } }
 
 .sheet {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   padding: 12px 18px 20px;
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 .sheet h2 { margin: 0; font-size: 23px; font-weight: 800; }
 .sheet-rule { width: 100%; margin: 0; border: 0; border-top: 2px solid var(--hairline); }
 .sheet p { margin: 0; }
+/* only the fields scroll — the title and the actions stay put */
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-inline: 6px;
+  margin-inline: -6px;
+  padding-block: 2px;
+}
+
+.sheet-actions { flex: none; }
+
 .grabber {
   width: 46px;
   height: 5px;

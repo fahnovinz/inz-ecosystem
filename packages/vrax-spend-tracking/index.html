@@ -148,26 +148,28 @@
   <form method="dialog" class="sheet" id="add-form">
     <div class="grabber" aria-hidden="true"></div>
     <h2 id="add-title">Catat pengeluaran</h2>
-    <div class="field">
-      <label class="label" for="f-amount">Jumlah</label>
-      <div class="amount-wrap">
-        <span aria-hidden="true">Rp</span>
-        <input id="f-amount" name="amount" type="text" inputmode="numeric" autocomplete="off" placeholder="25.000" required>
+    <div class="sheet-body">
+      <div class="field">
+        <label class="label" for="f-amount">Jumlah</label>
+        <div class="amount-wrap">
+          <span aria-hidden="true">Rp</span>
+          <input id="f-amount" name="amount" type="text" inputmode="numeric" autocomplete="off" placeholder="25.000" required>
+        </div>
       </div>
+      <div class="field">
+        <span class="label">Kategori</span>
+        <div class="chips" id="f-chips" role="group" aria-label="Kategori"></div>
+      </div>
+      <div class="field">
+        <label class="label" for="f-note">Catatan</label>
+        <input id="f-note" name="note" type="text" autocomplete="off" placeholder="Kopi + roti bakar">
+      </div>
+      <div class="field">
+        <label class="label" for="f-date">Tanggal</label>
+        <input id="f-date" name="date" type="date" required>
+      </div>
+      <p class="warn" id="f-error" hidden>Isi jumlahnya dulu dengan angka lebih dari nol.</p>
     </div>
-    <div class="field">
-      <span class="label">Kategori</span>
-      <div class="chips" id="f-chips" role="group" aria-label="Kategori"></div>
-    </div>
-    <div class="field">
-      <label class="label" for="f-note">Catatan</label>
-      <input id="f-note" name="note" type="text" autocomplete="off" placeholder="Kopi + roti bakar">
-    </div>
-    <div class="field">
-      <label class="label" for="f-date">Tanggal</label>
-      <input id="f-date" name="date" type="date" required>
-    </div>
-    <p class="warn" id="f-error" hidden>Isi jumlahnya dulu dengan angka lebih dari nol.</p>
     <div class="sheet-actions">
       <button class="btn btn-lg" type="button" id="add-cancel">Batal</button>
       <button class="btn btn-lg btn-green" type="submit">Simpan</button>
@@ -179,16 +181,18 @@
   <form method="dialog" class="sheet" id="budget-form">
     <div class="grabber" aria-hidden="true"></div>
     <h2 id="budget-dlg-title">Atur budget</h2>
-    <div class="field">
-      <label class="label" for="f-daily">Harian</label>
-      <div class="amount-wrap"><span aria-hidden="true">Rp</span>
-        <input id="f-daily" name="daily" type="text" inputmode="numeric" autocomplete="off" required>
+    <div class="sheet-body">
+      <div class="field">
+        <label class="label" for="f-daily">Harian</label>
+        <div class="amount-wrap"><span aria-hidden="true">Rp</span>
+          <input id="f-daily" name="daily" type="text" inputmode="numeric" autocomplete="off" required>
+        </div>
       </div>
-    </div>
-    <div class="field">
-      <label class="label" for="f-monthly">Bulanan</label>
-      <div class="amount-wrap"><span aria-hidden="true">Rp</span>
-        <input id="f-monthly" name="monthly" type="text" inputmode="numeric" autocomplete="off" required>
+      <div class="field">
+        <label class="label" for="f-monthly">Bulanan</label>
+        <div class="amount-wrap"><span aria-hidden="true">Rp</span>
+          <input id="f-monthly" name="monthly" type="text" inputmode="numeric" autocomplete="off" required>
+        </div>
       </div>
     </div>
     <div class="sheet-actions">
@@ -202,14 +206,16 @@
   <form method="dialog" class="sheet" id="settings-form">
     <div class="grabber" aria-hidden="true"></div>
     <h2 id="settings-title">Pengaturan</h2>
-    <div class="field">
-      <label class="label" for="f-name">Nama sapaan</label>
-      <input id="f-name" name="name" type="text" autocomplete="given-name" maxlength="24" placeholder="Rezi">
+    <div class="sheet-body">
+      <div class="field">
+        <label class="label" for="f-name">Nama sapaan</label>
+        <input id="f-name" name="name" type="text" autocomplete="given-name" maxlength="24" placeholder="Rezi">
+      </div>
+      <p class="meta">Dipakai buat sapaan di beranda. Kosongkan kalau nggak mau pakai nama.</p>
+      <hr class="sheet-rule">
+      <p class="meta">Semua angka disimpan di perangkat ini lewat localStorage — tanpa akun, tanpa server.</p>
+      <p class="meta" id="settings-state"></p>
     </div>
-    <p class="meta">Dipakai buat sapaan di beranda. Kosongkan kalau nggak mau pakai nama.</p>
-    <hr class="sheet-rule">
-    <p class="meta">Semua angka disimpan di perangkat ini lewat localStorage — tanpa akun, tanpa server.</p>
-    <p class="meta" id="settings-state"></p>
     <div class="sheet-actions">
       <button class="btn btn-lg" type="button" id="wipe-btn">Hapus semua</button>
       <button class="btn btn-lg btn-green" type="submit">Simpan</button>
