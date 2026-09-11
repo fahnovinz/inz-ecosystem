@@ -24,7 +24,7 @@ Deploy ke GitHub Pages / Netlify / Cloudflare Pages cukup dengan mengunggah tiga
 | **Riwayat** | Peta harian 3 atau 6 bulan · kartu transaksi / rata-rata / terbesar · progress budget bulanan |
 | **Catatan** | Log transaksi dikelompokkan per hari, tiap baris bisa dihapus, dimuat 10 hari sekali |
 
-Tombol **+** melayang di atas tab bar membuka bottom sheet *Catat pengeluaran*. Ikon slider di app bar membuka pengaturan (hapus semua data), ikon bulan mengganti tema.
+Pindah tab bisa dengan **geser kiri/kanan** di badan layar, ditekan di tab bar, atau panah kiri/kanan saat tab bar difokuskan — ketiganya menggerakkan pager yang sama. Tombol **+** melayang di atas tab bar membuka bottom sheet *Catat pengeluaran*. Ikon slider di app bar membuka pengaturan (hapus semua data), ikon bulan mengganti tema.
 
 ## Level warna pada peta riwayat
 
@@ -46,7 +46,7 @@ Dihitung dari total satu hari terhadap budget harian:
 ## Berkas
 
 ```text
-index.html   app bar, tiga layar, tab bar, bottom sheet
+index.html   app bar, pager tiga layar, tab bar, bottom sheet
 styles.css   token warna (terang & gelap), kartu, tombol, peta, dock
-app.js       penyimpanan, perhitungan, navigasi tab, render — tanpa dependency
+app.js       penyimpanan, perhitungan, pager + navigasi tab, render — tanpa dependency
 ```

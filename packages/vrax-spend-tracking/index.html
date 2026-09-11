@@ -27,9 +27,9 @@
   </button>
 </header>
 
-<main>
+<main class="pager" id="pager">
   <!-- ══ BERANDA ══ -->
-  <section class="screen" id="screen-home" aria-label="Beranda">
+  <section class="screen" id="screen-home" role="tabpanel" aria-labelledby="tab-home">
     <p class="daystamp" id="daystamp">—</p>
 
     <section class="card hero">
@@ -65,7 +65,7 @@
   </section>
 
   <!-- ══ RIWAYAT ══ -->
-  <section class="screen" id="screen-history" aria-label="Riwayat" hidden>
+  <section class="screen" id="screen-history" role="tabpanel" aria-labelledby="tab-history">
     <div class="seg" role="group" aria-label="Rentang waktu">
       <button type="button" data-weeks="13" aria-pressed="true">3 bulan</button>
       <button type="button" data-weeks="26" aria-pressed="false">6 bulan</button>
@@ -108,7 +108,7 @@
   </section>
 
   <!-- ══ CATATAN ══ -->
-  <section class="screen" id="screen-log" aria-label="Catatan" hidden>
+  <section class="screen" id="screen-log" role="tabpanel" aria-labelledby="tab-log">
     <div id="log"></div>
     <button class="btn btn-block" id="more-btn" type="button" hidden>Muat lebih banyak</button>
   </section>
@@ -118,16 +118,16 @@
   <button class="fab" id="add-btn" type="button" aria-label="Catat pengeluaran">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
   </button>
-  <nav class="tabbar" aria-label="Navigasi utama">
-    <button class="tab" type="button" data-screen="home" aria-selected="true">
+  <nav class="tabbar" role="tablist" aria-label="Navigasi utama">
+    <button class="tab" type="button" role="tab" id="tab-home" data-screen="home" aria-controls="screen-home" aria-selected="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg>
       Beranda
     </button>
-    <button class="tab" type="button" data-screen="history" aria-selected="false">
+    <button class="tab" type="button" role="tab" id="tab-history" data-screen="history" aria-controls="screen-history" aria-selected="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-6"/></svg>
       Riwayat
     </button>
-    <button class="tab" type="button" data-screen="log" aria-selected="false">
+    <button class="tab" type="button" role="tab" id="tab-log" data-screen="log" aria-controls="screen-log" aria-selected="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>
       Catatan
     </button>

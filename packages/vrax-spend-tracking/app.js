@@ -22,7 +22,8 @@
   var weeks = 13;
   var daysShown = DAYS_PER_PAGE;
   var chosenCat = "makan";
-  var screen = "home";
+  var activeScreen = "home";
+  var SCREENS = ["home", "history", "log"];
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -437,16 +438,45 @@
 
   /* ───────── navigation + sheets ───────── */
 
-  function showScreen(name) {
-    screen = name;
-    ["home", "history", "log"].forEach(function (id) {
-      $("screen-" + id).hidden = id !== name;
-    });
+  function reducedMotion() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function markTab(name) {
+    if (activeScreen === name) return;
+    activeScreen = name;
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
       tab.setAttribute("aria-selected", String(tab.dataset.screen === name));
     });
-    window.scrollTo({ top: 0, behavior: "auto" });
-    if (name === "history") scrollHeatToToday();
+  }
+
+  function showScreen(name, smooth) {
+    var index = SCREENS.indexOf(name);
+    if (index < 0) return;
+    var pager = $("pager");
+    markTab(name);
+    pager.scrollTo({
+      left: index * pager.clientWidth,
+      behavior: smooth === false || reducedMotion() ? "auto" : "smooth"
+    });
+  }
+
+  // A swipe moves the pager; the tab bar follows whatever panel it settles on.
+  function watchPager() {
+    var pager = $("pager");
+    var frame = null;
+
+    pager.addEventListener("scroll", function () {
+      if (frame) return;
+      frame = window.requestAnimationFrame(function () {
+        frame = null;
+        var width = pager.clientWidth || 1;
+        var index = Math.round(pager.scrollLeft / width);
+        markTab(SCREENS[Math.min(Math.max(index, 0), SCREENS.length - 1)]);
+      });
+    }, { passive: true });
+
+    window.addEventListener("resize", function () { showScreen(activeScreen, false); });
   }
 
   function open(dlg) {
@@ -505,9 +535,19 @@
       write(THEME_KEY, next);
     });
 
-    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+    tabs.forEach(function (tab) {
       tab.addEventListener("click", function () { showScreen(tab.dataset.screen); });
+      tab.addEventListener("keydown", function (event) {
+        var step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+        if (!step) return;
+        event.preventDefault();
+        var next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
+        next.focus();
+        showScreen(next.dataset.screen);
+      });
     });
+    watchPager();
 
     $("to-log").addEventListener("click", function () { showScreen("log"); });
 
@@ -604,7 +644,7 @@
     });
 
     render();
-    showScreen("home");
+    showScreen("home", false);
   }
 
   if (document.readyState === "loading") {

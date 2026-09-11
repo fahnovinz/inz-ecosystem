@@ -96,6 +96,11 @@
 
 body {
   margin: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
@@ -142,8 +147,7 @@ button, input, select { font: inherit; color: inherit; }
 /* ───────── app bar ───────── */
 
 .appbar {
-  position: sticky;
-  top: 0;
+  flex: none;
   z-index: 15;
   width: min(var(--app), 100%);
   margin-inline: auto;
@@ -196,12 +200,31 @@ button, input, select { font: inherit; color: inherit; }
 
 /* ───────── screens ───────── */
 
-main {
+/* horizontal pager: one panel per tab, swiped by the browser's own snap scrolling */
+.pager {
+  flex: 1;
+  min-height: 0;
   width: min(var(--app), 100%);
   margin-inline: auto;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
+.pager::-webkit-scrollbar { display: none; }
 
 .screen {
+  flex: 0 0 100%;
+  min-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -209,7 +232,7 @@ main {
   padding-block: 20px 0;
   padding-bottom: calc(132px + env(safe-area-inset-bottom));
 }
-.screen[hidden] { display: none; }
+.screen::-webkit-scrollbar { display: none; }
 
 .daystamp {
   margin: 0;
@@ -392,7 +415,7 @@ main {
 
 /* ───────── heat map ───────── */
 
-.heat-card { padding-left: 0; padding-right: 14px; overflow-x: auto; }
+.heat-card { padding-left: 0; padding-right: 14px; overflow-x: auto; overscroll-behavior-x: contain; }
 .heat {
   display: grid;
   grid-auto-flow: column;

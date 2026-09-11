@@ -51,7 +51,7 @@ Product card: [packages/vraxtal-vault](packages/vraxtal-vault/) · Demo (maintai
 
 | | |
 |--|--|
-| **What** | Daily spend tracker shaped as a mobile app — three tabs, floating add button, bottom sheets |
+| **What** | Daily spend tracker shaped as a mobile app — three swipeable tabs, floating add button, bottom sheets |
 | **Why** | See where the day's money went without a signup, an app store, or a server |
 | **How** | Static HTML/CSS/JS, zero dependencies, everything kept in `localStorage` |
 | **Folder** | **[packages/vrax-spend-tracking](packages/vrax-spend-tracking/)** |
