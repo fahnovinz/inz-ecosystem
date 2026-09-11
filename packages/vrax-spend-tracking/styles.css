@@ -427,41 +427,60 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 /* ───────── heat map ───────── */
+/* The weekday labels sit OUTSIDE the scroller, so nothing is sticky: the
+   cells are clipped cleanly at the scroller's edge and the labels never move. */
 
-.heat-card {
-  padding-left: 0;
-  padding-right: 14px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-}
-.heat {
+.heat-card { padding-right: 0; }
+
+.heat-wrap { display: flex; gap: 8px; }
+
+.heat-days {
+  flex: none;
   display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: auto repeat(7, 1fr);
+  grid-template-rows: 16px repeat(7, 15px);
   gap: 6px;
 }
-.heat-month {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-soft);
-  height: 16px;
-  white-space: nowrap;
-}
-.heat-dayname {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-soft);
-  min-width: 52px;
-  padding-inline: 18px 6px;
+.heat-days span {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ink-soft);
 }
+
+.heat-scroll {
+  flex: 1;
+  min-width: 0;
+  padding-right: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.heat-scroll::-webkit-scrollbar { display: none; }
+
+.heat { display: flex; gap: 6px; width: max-content; }
+
+.week {
+  flex: none;
+  display: grid;
+  grid-template-columns: 15px;
+  grid-template-rows: 16px repeat(7, 15px);
+  gap: 6px;
+  scroll-snap-align: start;
+}
+
+.heat-month {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
 .cell {
   width: 15px;
   height: 15px;

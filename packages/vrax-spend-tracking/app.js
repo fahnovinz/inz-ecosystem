@@ -294,33 +294,36 @@
 
   function renderHeat(byDay) {
     var heat = $("heat");
+    var days = $("heat-days");
     heat.textContent = "";
+    days.textContent = "";
+
+    days.appendChild(document.createElement("span")); // lines up with the month row
+    DAY_NAMES.forEach(function (name) {
+      var el = document.createElement("span");
+      el.textContent = name;
+      days.appendChild(el);
+    });
 
     var today = startOfDay(new Date());
     var thisMonday = new Date(today.getTime() - ((today.getDay() + 6) % 7) * DAY);
     var start = new Date(thisMonday.getTime() - (weeks - 1) * 7 * DAY);
 
-    var corner = document.createElement("span");
-    corner.className = "heat-dayname";
-    heat.appendChild(corner);
-    DAY_NAMES.forEach(function (name) {
-      var el = document.createElement("span");
-      el.className = "heat-dayname";
-      el.textContent = name;
-      heat.appendChild(el);
-    });
-
     var lastMonth = -1;
     for (var week = 0; week < weeks; week++) {
       var monday = new Date(start.getTime() + week * 7 * DAY);
       var sunday = new Date(monday.getTime() + 6 * DAY);
+
+      var column = document.createElement("div");
+      column.className = "week";
+
       var monthLabel = document.createElement("span");
       monthLabel.className = "heat-month";
       if (sunday.getMonth() !== lastMonth) {
         lastMonth = sunday.getMonth();
         monthLabel.textContent = MONTHS[lastMonth];
       }
-      heat.appendChild(monthLabel);
+      column.appendChild(monthLabel);
 
       for (var d = 0; d < 7; d++) {
         var date = new Date(monday.getTime() + d * DAY);
@@ -334,8 +337,10 @@
           if (lv) cell.className += " lv" + lv;
           cell.title = DAY_FMT.format(date) + " · " + money(total);
         }
-        heat.appendChild(cell);
+        column.appendChild(cell);
       }
+
+      heat.appendChild(column);
     }
 
     heat.setAttribute("aria-label", "Peta pengeluaran " + weeks + " minggu terakhir");
@@ -343,7 +348,7 @@
   }
 
   function scrollHeatToToday() {
-    var scroller = $("heat").parentNode;
+    var scroller = $("heat-scroll");
     scroller.scrollLeft = scroller.scrollWidth;
   }
 
