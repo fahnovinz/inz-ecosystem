@@ -45,6 +45,7 @@
         if (parsed && Array.isArray(parsed.entries)) {
           parsed.budget = parsed.budget || { daily: 150000, monthly: 4500000 };
           parsed.verdicts = parsed.verdicts || {};
+          parsed.name = typeof parsed.name === "string" ? parsed.name : "";
           return parsed;
         }
       } catch (e) { /* fall through to a fresh seed */ }
@@ -53,6 +54,7 @@
       entries: seed(),
       budget: { daily: 150000, monthly: 4500000 },
       verdicts: seedVerdicts(),
+      name: "",
       demo: true
     };
   }
@@ -186,6 +188,7 @@
     var byDay = totalsByDay();
     var list = sorted();
 
+    renderGreeting();
     $("daystamp").textContent = STAMP_FMT.format(new Date()).toUpperCase();
 
     renderHero(byDay[today] || 0);
@@ -195,6 +198,19 @@
     renderMonthly(byDay);
     renderHeat(byDay);
     renderLog(list);
+  }
+
+  function greetingWord() {
+    var hour = new Date().getHours();
+    if (hour < 11) return "Selamat pagi";
+    if (hour < 15) return "Selamat siang";
+    if (hour < 18) return "Selamat sore";
+    return "Selamat malam";
+  }
+
+  function renderGreeting() {
+    var name = (state.name || "").trim();
+    $("greeting").textContent = greetingWord() + (name ? ", " + name : "") + " 👋";
   }
 
   function renderHero(todayTotal) {
@@ -626,17 +642,22 @@
     });
 
     $("settings-btn").addEventListener("click", function () {
+      $("f-name").value = state.name || "";
       $("settings-state").textContent = state.demo
         ? "Sekarang menampilkan data contoh 26 minggu."
         : idr.format(state.entries.length) + " catatan tersimpan di perangkat ini.";
       open($("settings-dlg"));
     });
 
-    $("settings-close").addEventListener("click", function () { close($("settings-dlg")); });
+    $("settings-form").addEventListener("submit", function () {
+      state.name = $("f-name").value.trim().slice(0, 24);
+      save();
+      render();
+    });
 
     $("wipe-btn").addEventListener("click", function () {
       if (!window.confirm("Hapus semua catatan dan mulai dari nol?")) return;
-      state = { entries: [], budget: state.budget, verdicts: {}, demo: false };
+      state = { entries: [], budget: state.budget, verdicts: {}, name: state.name, demo: false };
       daysShown = DAYS_PER_PAGE;
       close($("settings-dlg"));
       save();

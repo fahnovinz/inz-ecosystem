@@ -61,7 +61,7 @@ cd packages/vrax-spend-tracking
 python3 -m http.server 8080   # → http://localhost:8080
 ```
 
-Light and dark themes, Indonesian copy, rupiah formatting, safe-area aware. Open it once and the app seeds 26 weeks of example data so the map and stats read immediately — clear it under **Pengaturan → Mulai dari nol**.
+Light and dark themes, Indonesian copy, rupiah formatting, safe-area aware. Open it once and the app seeds 26 weeks of example data so the map and stats read immediately — clear it under **Pengaturan → Hapus semua**, where the greeting name is set too.
 
 ---
 

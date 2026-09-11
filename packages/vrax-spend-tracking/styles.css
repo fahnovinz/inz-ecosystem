@@ -234,6 +234,17 @@ button, input, select { font: inherit; color: inherit; }
 }
 .screen::-webkit-scrollbar { display: none; }
 
+.hello { display: flex; flex-direction: column; gap: 3px; }
+
+.greeting {
+  margin: 0;
+  font-size: clamp(21px, 6vw, 26px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
 .daystamp {
   margin: 0;
   font-family: var(--mono);
@@ -606,6 +617,7 @@ dialog[open] { animation: rise .22s ease-out; }
   padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 .sheet h2 { margin: 0; font-size: 23px; font-weight: 800; }
+.sheet-rule { width: 100%; margin: 0; border: 0; border-top: 2px solid var(--hairline); }
 .sheet p { margin: 0; }
 .grabber {
   width: 46px;

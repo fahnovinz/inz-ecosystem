@@ -30,7 +30,10 @@
 <main class="pager" id="pager">
   <!-- ══ BERANDA ══ -->
   <section class="screen" id="screen-home" role="tabpanel" aria-labelledby="tab-home">
-    <p class="daystamp" id="daystamp">—</p>
+    <div class="hello">
+      <h1 class="greeting" id="greeting">Halo 👋</h1>
+      <p class="daystamp" id="daystamp">—</p>
+    </div>
 
     <section class="card hero">
       <div class="hero-top">
@@ -190,16 +193,22 @@
 </dialog>
 
 <dialog id="settings-dlg" aria-labelledby="settings-title">
-  <div class="sheet">
+  <form method="dialog" class="sheet" id="settings-form">
     <div class="grabber" aria-hidden="true"></div>
     <h2 id="settings-title">Pengaturan</h2>
-    <p>Semua angka disimpan di perangkat ini lewat <b>localStorage</b>. Tanpa akun, tanpa server, tanpa sinkronisasi.</p>
+    <div class="field">
+      <label class="label" for="f-name">Nama sapaan</label>
+      <input id="f-name" name="name" type="text" autocomplete="given-name" maxlength="24" placeholder="Rezi">
+    </div>
+    <p class="meta">Dipakai buat sapaan di beranda. Kosongkan kalau nggak mau pakai nama.</p>
+    <hr class="sheet-rule">
+    <p class="meta">Semua angka disimpan di perangkat ini lewat localStorage — tanpa akun, tanpa server.</p>
     <p class="meta" id="settings-state"></p>
     <div class="sheet-actions">
-      <button class="btn btn-lg" type="button" id="wipe-btn">Mulai dari nol</button>
-      <button class="btn btn-lg btn-accent" type="button" id="settings-close">Tutup</button>
+      <button class="btn btn-lg" type="button" id="wipe-btn">Hapus semua</button>
+      <button class="btn btn-lg btn-green" type="submit">Simpan</button>
     </div>
-  </div>
+  </form>
 </dialog>
 
 <script src="app.js"></script>

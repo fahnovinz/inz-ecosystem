@@ -20,11 +20,11 @@ Deploy ke GitHub Pages / Netlify / Cloudflare Pages cukup dengan mengunggah tiga
 
 | Tab | Isinya |
 |-----|--------|
-| **Beranda** | Total keluar hari ini + bar budget harian · tombol *hemat / boros* beserta tallynya · tiga catatan terakhir |
+| **Beranda** | Sapaan (menyesuaikan jam) + tanggal · total keluar hari ini + bar budget harian · tombol *hemat / boros* beserta tallynya · tiga catatan terakhir |
 | **Riwayat** | Peta harian 3 atau 6 bulan · kartu transaksi / rata-rata / terbesar · progress budget bulanan |
 | **Catatan** | Log transaksi dikelompokkan per hari, tiap baris bisa dihapus, dimuat 10 hari sekali |
 
-Pindah tab bisa dengan **geser kiri/kanan** di badan layar, ditekan di tab bar, atau panah kiri/kanan saat tab bar difokuskan — ketiganya menggerakkan pager yang sama. Tombol **+** melayang di atas tab bar membuka bottom sheet *Catat pengeluaran*. Ikon slider di app bar membuka pengaturan (hapus semua data), ikon bulan mengganti tema.
+Pindah tab bisa dengan **geser kiri/kanan** di badan layar, ditekan di tab bar, atau panah kiri/kanan saat tab bar difokuskan — ketiganya menggerakkan pager yang sama. Tombol **+** melayang di atas tab bar membuka bottom sheet *Catat pengeluaran*. Ikon slider di app bar membuka pengaturan — **nama sapaan** dan tombol hapus semua data — sedangkan ikon bulan mengganti tema.
 
 ## Level warna pada peta riwayat
 
@@ -39,8 +39,8 @@ Dihitung dari total satu hari terhadap budget harian:
 
 ## Data
 
-- Kunci penyimpanan: `vrax-spend:v1` (catatan, budget, penilaian harian) dan `vrax-spend:theme`
-- Saat pertama dibuka, aplikasi diisi **data contoh** 26 minggu supaya peta dan statistik langsung terbaca. Hapus lewat **Pengaturan → Mulai dari nol**
+- Kunci penyimpanan: `vrax-spend:v1` (catatan, budget, penilaian harian, nama sapaan) dan `vrax-spend:theme`
+- Saat pertama dibuka, aplikasi diisi **data contoh** 26 minggu supaya peta dan statistik langsung terbaca. Hapus lewat **Pengaturan → Hapus semua** (nama sapaan tetap tersimpan)
 - Tidak ada request keluar selain berkas font Google
 
 ## Berkas
