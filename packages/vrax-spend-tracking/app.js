@@ -292,9 +292,14 @@
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   var DAY_NAMES = ["Sen", "", "Rab", "", "Jum", "", "Min"];
 
+  var renderedWeeks = null;
+
   function renderHeat(byDay) {
     var heat = $("heat");
     var days = $("heat-days");
+    var scroller = $("heat-scroll");
+    var keptScroll = scroller.scrollLeft;
+    var sameRange = renderedWeeks === weeks;
     heat.textContent = "";
     days.textContent = "";
 
@@ -344,7 +349,10 @@
     }
 
     heat.setAttribute("aria-label", "Peta pengeluaran " + weeks + " minggu terakhir");
-    scrollHeatToToday();
+    renderedWeeks = weeks;
+
+    if (sameRange) scroller.scrollLeft = keptScroll;
+    else scrollHeatToToday();
   }
 
   function scrollHeatToToday() {
@@ -657,8 +665,12 @@
     }
 
     $("more-btn").addEventListener("click", function () {
+      var panel = $("screen-log");
+      var keep = panel.scrollTop;
       daysShown += DAYS_PER_PAGE;
       render();
+      panel.scrollTop = keep;
+      window.requestAnimationFrame(function () { panel.scrollTop = keep; });
     });
 
     $("settings-btn").addEventListener("click", function () {

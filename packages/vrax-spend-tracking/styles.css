@@ -94,6 +94,9 @@
 
 * { box-sizing: border-box; }
 
+/* .btn sets display, which would otherwise outrank the browser's [hidden] rule */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   height: 100vh;
@@ -527,6 +530,8 @@ button, input, select { font: inherit; color: inherit; }
 .stat-blue   { background: var(--blue); }
 
 /* ───────── day groups (Catatan) ───────── */
+
+#log { overflow-anchor: none; }
 
 .daygroup { display: flex; flex-direction: column; gap: 9px; }
 .daygroup .card {
