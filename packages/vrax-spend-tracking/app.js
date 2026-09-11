@@ -488,7 +488,12 @@
   function lockTabs(ms) {
     navLocked = true;
     window.clearTimeout(navTimer);
-    navTimer = window.setTimeout(function () { navLocked = false; }, ms);
+    navTimer = window.setTimeout(releaseNav, ms);
+  }
+
+  function releaseNav() {
+    navLocked = false;
+    $("pager").style.scrollSnapType = "";
   }
 
   function showScreen(name, smooth) {
@@ -500,6 +505,7 @@
 
     markTab(name);
     lockTabs(instant ? 80 : 600);
+    pager.style.scrollSnapType = "none";
     pager.scrollTo({ left: index * pager.clientWidth, behavior: instant ? "auto" : "smooth" });
   }
 
@@ -508,7 +514,7 @@
     var pager = $("pager");
     var frame = null;
 
-    pager.addEventListener("scrollend", function () { navLocked = false; });
+    pager.addEventListener("scrollend", releaseNav);
 
     pager.addEventListener("scroll", function () {
       if (navLocked || frame) return;
@@ -611,7 +617,6 @@
       $("f-date").value = dateKey(new Date());
       $("f-error").hidden = true;
       open($("add-dlg"));
-      $("f-amount").focus({ preventScroll: true });
     });
 
     $("add-cancel").addEventListener("click", function () { close($("add-dlg")); });

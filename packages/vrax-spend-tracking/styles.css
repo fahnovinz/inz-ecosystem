@@ -398,10 +398,10 @@ button, input, select { font: inherit; color: inherit; }
 .btn-accent { background: var(--accent); color: var(--accent-ink); }
 
 .verdict { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.verdict .tick { display: none; }
+.verdict .tick { visibility: hidden; }
 .verdict .btn[aria-pressed="true"] { background: var(--green); }
 .verdict .btn[aria-pressed="true"].is-over { background: var(--accent); color: var(--accent-ink); }
-.verdict .btn[aria-pressed="true"] .tick { display: inline; }
+.verdict .btn[aria-pressed="true"] .tick { visibility: visible; }
 
 /* ───────── segmented control ───────── */
 
@@ -614,14 +614,19 @@ button, input, select { font: inherit; color: inherit; }
   color: var(--ink-soft);
   cursor: pointer;
 }
-.tab svg { width: 22px; height: 22px; }
+.tab svg {
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  box-sizing: content-box;
+  border-radius: 999px;
+  background: transparent;
+  transition: background-color .15s ease;
+}
 .tab[aria-selected="true"] { color: var(--ink); }
 .tab[aria-selected="true"] svg {
   background: var(--yellow-hi);
   color: #17150f;
-  border-radius: 999px;
-  padding: 3px;
-  box-sizing: content-box;
 }
 
 /* ───────── bottom sheets ───────── */
