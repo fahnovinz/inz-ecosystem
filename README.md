@@ -11,6 +11,7 @@
 ```text
   INZ Ecosystem
   ├── Tools      inz stats · health · badges · products
+  ├── App        VRAX Spend Tracking — daily spend tracker in the browser
   └── Product ★  VRAXTAL VAULT — self-hosted encrypted personal vault
 ```
 
@@ -43,6 +44,24 @@ cd vraxtal-vault && npm ci && npm test
 - Ubuntu VPS deploy + backup tooling  
 
 Product card: [packages/vraxtal-vault](packages/vraxtal-vault/) · Demo (maintainer-private): [vault.vraxtal.site](https://vault.vraxtal.site)
+
+---
+
+## App — VRAX Spend Tracking
+
+| | |
+|--|--|
+| **What** | Single-page daily spend tracker — budget watch, 26-week spend map, transaction log |
+| **Why** | See where the day's money went without a signup, an app store, or a server |
+| **How** | Static HTML/CSS/JS, zero dependencies, everything kept in `localStorage` |
+| **Folder** | **[packages/vrax-spend-tracking](packages/vrax-spend-tracking/)** |
+
+```bash
+cd packages/vrax-spend-tracking
+python3 -m http.server 8080   # → http://localhost:8080
+```
+
+Light and dark themes, Indonesian copy, rupiah formatting. Open it once and the page seeds 26 weeks of example data so the map and stats read immediately — clear it with **mulai dari nol** in the footer.
 
 ---
 

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VRAX Spend Tracking</title>
+<meta name="description" content="Pencatat pengeluaran harian — budget watch, riwayat 26 minggu, dan catatan transaksi yang tersimpan di perangkatmu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <div class="avatar" aria-hidden="true">VX</div>
+    <h1>VRAX Spend Tracking</h1>
+    <div class="head-actions">
+      <button class="btn btn-icon" id="about-btn" type="button" aria-label="Tentang aplikasi ini">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.2"/></svg>
+      </button>
+      <button class="btn btn-icon" id="theme-btn" type="button" aria-label="Ganti mode terang / gelap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.2 8.2 0 0 1 9.5 4 8.3 8.3 0 1 0 20 14.5Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <p class="tagline">Kami catat <strong>pengeluaran harianmu</strong>, biar kamu nggak perlu ngira-ngira di akhir bulan.</p>
+
+  <div class="top-actions">
+    <button class="btn" id="add-btn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      catat baru
+    </button>
+    <button class="btn" id="budget-btn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.4"/></svg>
+      atur budget
+    </button>
+  </div>
+
+  <!-- BUDGET WATCH -->
+  <section class="card watch" aria-labelledby="watch-title">
+    <div class="watch-head">
+      <p class="label">👀 Budget watch</p>
+      <h2 id="watch-title"><span id="watch-pct">0%</span> budget harian kepakai</h2>
+      <p class="label" id="watch-sub">Sisa Rp 0 · reset 00:00 WIB</p>
+    </div>
+
+    <div class="quote">
+      <div class="avatar avatar-sm" aria-hidden="true">VX</div>
+      <div class="quote-body">
+        <p class="quote-head">Pengeluaran terbesar <span>· hari ini</span></p>
+        <p class="quote-note" id="top-note">Belum ada catatan hari ini.</p>
+        <p class="quote-amount num" id="top-amount">Rp 0</p>
+      </div>
+    </div>
+
+    <p class="label">Hari ini gimana?</p>
+    <div class="verdict" role="group" aria-label="Penilaian hari ini">
+      <button class="btn" id="v-hemat" type="button" aria-pressed="false">
+        <span class="tick" aria-hidden="true">✓</span> Hemat <span class="count num" id="c-hemat">0</span>
+      </button>
+      <button class="btn is-over" id="v-boros" type="button" aria-pressed="false">
+        <span class="tick" aria-hidden="true">✓</span> Boros <span class="count num" id="c-boros">0</span>
+      </button>
+    </div>
+
+    <div class="watch-foot">
+      <span class="meta" id="verdict-state">Belum dinilai</span>
+      <button class="link" id="jump-log" type="button">Lihat catatan bulan ini ↗</button>
+    </div>
+  </section>
+
+  <!-- PENGELUARAN TERAKHIR -->
+  <section class="card latest" aria-labelledby="latest-title">
+    <p class="label" id="latest-title">Pengeluaran terakhir</p>
+    <span class="latest-big" id="latest-rel">belum ada</span>
+    <div class="latest-foot">
+      <span class="meta" id="latest-date">Catat transaksi pertamamu →</span>
+      <span class="badge-total"><span aria-hidden="true">🔥</span> <span id="today-total">Rp 0</span></span>
+    </div>
+  </section>
+
+  <div class="stats">
+    <div class="stat stat-yellow">
+      <p class="label">Transaksi</p>
+      <b id="s-count">0</b>
+    </div>
+    <div class="stat stat-pink">
+      <p class="label">Rata² / hari</p>
+      <b id="s-avg">Rp 0</b>
+    </div>
+    <div class="stat stat-blue">
+      <p class="label">Terbesar</p>
+      <b id="s-max">Rp 0</b>
+    </div>
+  </div>
+
+  <section class="card budget" aria-labelledby="budget-title">
+    <div class="budget-top">
+      <p class="label" id="budget-title">Budget bulan ini</p>
+      <span class="meta" id="budget-left-days">—</span>
+    </div>
+    <div class="track" role="img" aria-label="Pemakaian budget bulanan" id="budget-track"><i id="budget-fill" style="width:0%"></i></div>
+    <div class="budget-foot">
+      <span><b class="num" id="budget-used">Rp 0</b> <span class="meta">dari <span id="budget-cap">Rp 0</span></span></span>
+      <span class="meta" id="budget-state">—</span>
+    </div>
+  </section>
+
+  <!-- RIWAYAT -->
+  <section class="section-head" aria-labelledby="heat-title">
+    <h2 id="heat-title">Riwayat pengeluaran</h2>
+    <div class="legend meta">
+      <span>26 minggu terakhir</span>
+      <span><i class="key key-1"></i> hemat</span>
+      <span><i class="key key-2"></i> sedang</span>
+      <span><i class="key key-3"></i> boros</span>
+    </div>
+  </section>
+  <div class="card heat-card">
+    <div class="heat" id="heat" role="img" aria-label="Peta pengeluaran 26 minggu terakhir"></div>
+  </div>
+
+  <!-- CATATAN -->
+  <section class="section-head" aria-labelledby="log-title">
+    <h2 id="log-title">Catatan pengeluaran</h2>
+    <p class="meta">Setiap transaksi, tersimpan di perangkatmu</p>
+  </section>
+  <div class="log" id="log"></div>
+  <button class="btn btn-block" id="more-btn" type="button">Tampilkan semua catatan ↓</button>
+
+  <hr class="rule">
+  <p class="foot">
+    Data disimpan lokal di browser ini — tidak ada yang dikirim ke server.<br>
+    <button class="link" id="wipe-btn" type="button">mulai dari nol ✕</button>
+  </p>
+</div>
+
+<dialog id="add-dlg" aria-labelledby="add-title">
+  <form method="dialog" class="sheet" id="add-form">
+    <h2 id="add-title">Catat pengeluaran</h2>
+    <div class="field">
+      <label class="label" for="f-amount">Jumlah (Rp)</label>
+      <input id="f-amount" name="amount" type="text" inputmode="numeric" autocomplete="off" placeholder="25.000" required>
+    </div>
+    <div class="field">
+      <span class="label">Kategori</span>
+      <div class="chips" id="f-chips" role="group" aria-label="Kategori"></div>
+    </div>
+    <div class="field">
+      <label class="label" for="f-note">Catatan</label>
+      <input id="f-note" name="note" type="text" autocomplete="off" placeholder="Kopi + roti bakar">
+    </div>
+    <div class="field">
+      <label class="label" for="f-date">Tanggal</label>
+      <input id="f-date" name="date" type="date" required>
+    </div>
+    <p class="meta" id="f-error" hidden>Isi jumlah dengan angka lebih dari nol.</p>
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="add-cancel">Batal</button>
+      <button class="btn btn-green" type="submit" id="add-save">Simpan</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="budget-dlg" aria-labelledby="budget-dlg-title">
+  <form method="dialog" class="sheet" id="budget-form">
+    <h2 id="budget-dlg-title">Atur budget</h2>
+    <div class="field">
+      <label class="label" for="f-daily">Budget harian (Rp)</label>
+      <input id="f-daily" name="daily" type="text" inputmode="numeric" autocomplete="off" required>
+    </div>
+    <div class="field">
+      <label class="label" for="f-monthly">Budget bulanan (Rp)</label>
+      <input id="f-monthly" name="monthly" type="text" inputmode="numeric" autocomplete="off" required>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="budget-cancel">Batal</button>
+      <button class="btn btn-green" type="submit">Simpan</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="about-dlg" aria-labelledby="about-title">
+  <div class="sheet">
+    <h2 id="about-title">Tentang VRAX</h2>
+    <p>Pencatat pengeluaran harian. Semua angka hidup di <b>localStorage</b> browser ini — tidak ada akun, tidak ada server, tidak ada yang ikut membaca.</p>
+    <p class="meta" id="about-seed"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-accent" type="button" id="about-close">Tutup</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
