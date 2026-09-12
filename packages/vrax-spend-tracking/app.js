@@ -33,8 +33,16 @@
     try { return window.localStorage.getItem(key); } catch (e) { return null; }
   }
 
+  var storageBroken = false;
+
   function write(key, value) {
-    try { window.localStorage.setItem(key, value); } catch (e) { /* private mode */ }
+    try {
+      window.localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      storageBroken = true;   // private mode, or the quota is full
+      return false;
+    }
   }
 
   function load() {
@@ -59,7 +67,14 @@
     };
   }
 
-  function save() { write(KEY, JSON.stringify(state)); }
+  function save() {
+    write(KEY, JSON.stringify(state));
+    renderStorageWarning();
+  }
+
+  function renderStorageWarning() {
+    $("storage-warn").hidden = !storageBroken;
+  }
 
   /* ───────── demo data, so the app opens in a working state ───────── */
 
@@ -87,7 +102,7 @@
     var out = [];
     var today = startOfDay(new Date());
     for (var back = 363; back >= 0; back--) {
-      var date = new Date(today.getTime() - back * DAY);
+      var date = addDays(today, -back);
       var weekend = date.getDay() === 0 || date.getDay() === 6;
       if (rand() < (weekend ? 0.28 : 0.34)) continue;
       var count = 1 + Math.floor(rand() * (weekend ? 3 : 2.4));
@@ -114,7 +129,7 @@
     var out = {};
     var today = startOfDay(new Date());
     for (var back = 363; back >= 1; back--) {
-      out[dateKey(new Date(today.getTime() - back * DAY))] = rand() < 0.72 ? "hemat" : "boros";
+      out[dateKey(addDays(today, -back))] = rand() < 0.72 ? "hemat" : "boros";
     }
     return out;
   }
@@ -122,6 +137,10 @@
   /* ───────── dates + money ───────── */
 
   function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+  function addDays(date, n) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+  }
 
   function dateKey(d) {
     return d.getFullYear() + "-" +
@@ -189,6 +208,7 @@
     var list = sorted();
 
     renderGreeting();
+    renderStorageWarning();
     $("daystamp").textContent = STAMP_FMT.format(new Date()).toUpperCase();
 
     renderHero(byDay[today] || 0);
@@ -213,6 +233,21 @@
     $("greeting").textContent = greetingWord() + (name ? ", " + name : "") + " 👋";
   }
 
+  function strong(text) {
+    var el = document.createElement("b");
+    el.textContent = text;
+    return el;
+  }
+
+  // Built as nodes rather than innerHTML: nothing user-typed should ever be
+  // able to reach this line as markup.
+  function setLine(el, parts) {
+    el.textContent = "";
+    parts.forEach(function (part) {
+      el.appendChild(typeof part === "string" ? document.createTextNode(part) : part);
+    });
+  }
+
   function renderHero(todayTotal) {
     var daily = state.budget.daily || 1;
     var ratio = todayTotal / daily;
@@ -223,12 +258,15 @@
     fill.className = ratio > 1 ? "over" : "";
 
     if (!todayTotal) {
-      $("hero-sub").textContent = "Belum ada pengeluaran. Budget " + money(daily) + " utuh.";
+      setLine($("hero-sub"), ["Belum ada pengeluaran. Budget " + money(daily) + " utuh."]);
     } else if (ratio > 1) {
-      $("hero-sub").innerHTML = "Lewat <b>" + money(todayTotal - daily) + "</b> dari budget " + money(daily);
+      setLine($("hero-sub"), [
+        "Lewat ", strong(money(todayTotal - daily)), " dari budget " + money(daily)
+      ]);
     } else {
-      $("hero-sub").innerHTML = Math.round(ratio * 100) + "% kepakai · sisa <b>" +
-        money(daily - todayTotal) + "</b>";
+      setLine($("hero-sub"), [
+        Math.round(ratio * 100) + "% kepakai · sisa ", strong(money(daily - todayTotal))
+      ]);
     }
   }
 
@@ -311,13 +349,13 @@
     });
 
     var today = startOfDay(new Date());
-    var thisMonday = new Date(today.getTime() - ((today.getDay() + 6) % 7) * DAY);
-    var start = new Date(thisMonday.getTime() - (weeks - 1) * 7 * DAY);
+    var thisMonday = addDays(today, -((today.getDay() + 6) % 7));
+    var start = addDays(thisMonday, -(weeks - 1) * 7);
 
     var lastMonth = -1;
     for (var week = 0; week < weeks; week++) {
-      var monday = new Date(start.getTime() + week * 7 * DAY);
-      var sunday = new Date(monday.getTime() + 6 * DAY);
+      var monday = addDays(start, week * 7);
+      var sunday = addDays(monday, 6);
 
       var column = document.createElement("div");
       column.className = "week";
@@ -331,7 +369,7 @@
       column.appendChild(monthLabel);
 
       for (var d = 0; d < 7; d++) {
-        var date = new Date(monday.getTime() + d * DAY);
+        var date = addDays(monday, d);
         var cell = document.createElement("span");
         cell.className = "cell";
         if (date > today) {
@@ -539,9 +577,12 @@
     else dlg.removeAttribute("open");
   }
 
+  var MAX_AMOUNT = 1e13; // Rp 10 triliun — past any real expense, short of breaking the layout
+
   function digits(value) {
     var n = Number(String(value).replace(/[^\d]/g, ""));
-    return isFinite(n) ? n : 0;
+    if (!isFinite(n) || n <= 0) return 0;
+    return Math.min(n, MAX_AMOUNT);
   }
 
   function buildChips() {

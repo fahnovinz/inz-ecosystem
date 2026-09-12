@@ -7,6 +7,15 @@ All notable changes to INZ Ecosystem are documented here.
 ### Added
 - **VRAX Spend Tracking** (`packages/vrax-spend-tracking/`) — static daily spend tracker built as a mobile app shell: app bar, three swipeable tabs (Beranda / Riwayat / Catatan) on a snap pager, floating add button, and bottom-sheet forms. Time-aware greeting with an editable name, today's budget bar, hemat/boros tally, 3-month / 6-month / 1-year spend map, monthly budget progress, and a day-grouped transaction log. Dependency-free, data kept in `localStorage`, light + dark themes, safe-area aware
 - `vrax-spend-tracking` registered in the product catalog (`inz products`)
+- `test/vrax-spend-tracking.test.js` guards the web app in CI: the script compiles, every id it reads exists in the markup, ids are unique, labels point at real controls, no markup is built from strings, dates are stepped by the calendar, and every CSS token used is declared on bare `:root`
+- `parseUsername` in `src/utils.js`, with `parseRepo` tightened to reject extra path segments, query strings and malformed logins
+
+### Fixed
+- **Unvalidated input reached the GitHub API path.** `fetchRepoBadges`, `fetchRepoHealth` and `fetchGitHubStats` interpolated their arguments straight into request paths, so `owner/repo?per_page=1` reshaped the URL — in `fetchRepoHealth` the injected `?` swallowed every sub-path, silently hitting the wrong endpoint — and `fetchRepoBadges("justowner")` requested `/repos/justowner/undefined`. All three validate at the library boundary now, not only in the CLI
+- **The CLI read flags as positional arguments.** `inz stats --json` fetched a user literally named `--json`, and `inz badges --token X owner/repo` treated `--token` as the repo. Positional lookup now skips flags and their values, a flag missing its value is an error, and `main()` catches so an unexpected rejection reports cleanly
+- **The spend map broke in DST timezones.** Stepping a day as `+86400000ms` lands on the wrong date when a day runs 23 or 25 hours; the map repeated one date and skipped the next. Dates are walked by the calendar now — verified with zero duplicates in Asia/Jakarta, America/New_York and Australia/Lord_Howe
+- A failed `localStorage` write was swallowed, so data could silently stop saving; the app now says so on screen
+- Defensive reads in `github-stats` for events without a timestamp, anonymous contributors and repos with no star count
 
 ## [0.3.2] — 2026-07-31
 

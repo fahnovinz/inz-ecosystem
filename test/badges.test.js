@@ -54,4 +54,15 @@ describe("badges", () => {
     assert.equal(result.fullName, "a/b");
     assert.match(result.markdown, /GitHub stars/);
   });
+
+  it("rejects a malformed repo before any request goes out", async () => {
+    let called = false;
+    setFetch(async () => {
+      called = true;
+      throw new Error("should never run");
+    });
+    await assert.rejects(() => fetchRepoBadges("owner/repo?per_page=1"), /Invalid repo format/);
+    await assert.rejects(() => fetchRepoBadges("justowner"), /Invalid repo format/);
+    assert.equal(called, false);
+  });
 });

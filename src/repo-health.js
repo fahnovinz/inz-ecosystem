@@ -1,5 +1,5 @@
 const { githubFetch } = require("./github-api");
-const { daysBetween } = require("./utils");
+const { daysBetween, parseRepo } = require("./utils");
 
 async function fetchTopics(owner, repo, token) {
   try {
@@ -112,7 +112,7 @@ function scoreFromContext(ctx) {
 
 async function fetchRepoHealth(repoInput, options = {}) {
   const token = options.token;
-  const [owner, repo] = repoInput.split("/");
+  const { owner, repo } = parseRepo(repoInput);
 
   const [repoData, topicsPayload, hasReadme, hasContributing, hasCi] = await Promise.all([
     githubFetch(`/repos/${owner}/${repo}`, token),
