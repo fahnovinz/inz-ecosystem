@@ -648,9 +648,11 @@ dialog::backdrop { background: rgba(12, 10, 6, .58); }
 dialog[open] {
   display: flex;
   flex-direction: column;
-  animation: rise .2s ease-out;
+  animation: sheet-up .24s cubic-bezier(.22, .8, .3, 1);
 }
-@keyframes rise { from { transform: translateY(18px); opacity: .4; } }
+dialog[open]::backdrop { animation: backdrop-in .24s ease-out; }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes backdrop-in { from { opacity: 0; } }
 
 .sheet {
   flex: 1;
