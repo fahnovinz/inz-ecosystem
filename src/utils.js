@@ -14,12 +14,24 @@ function oneYearAgo() {
   return date.toISOString().slice(0, 10);
 }
 
+// GitHub logins: alphanumeric with single hyphens, never leading or trailing, max 39.
+const USERNAME = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+const REPO_NAME = /^[A-Za-z0-9_.-]+$/;
+
 function parseRepo(input) {
-  const match = input.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
-  if (!match) {
+  const parts = String(input ?? "").split("/");
+  if (parts.length !== 2 || !USERNAME.test(parts[0]) || !REPO_NAME.test(parts[1])) {
     throw new Error(`Invalid repo format "${input}". Use owner/repo`);
   }
-  return { owner: match[1], repo: match[2], fullName: input };
+  return { owner: parts[0], repo: parts[1], fullName: `${parts[0]}/${parts[1]}` };
 }
 
-module.exports = { daysBetween, daysAgo, oneYearAgo, parseRepo };
+function parseUsername(input) {
+  const name = String(input ?? "");
+  if (!USERNAME.test(name)) {
+    throw new Error(`Invalid GitHub username "${input}".`);
+  }
+  return name;
+}
+
+module.exports = { daysBetween, daysAgo, oneYearAgo, parseRepo, parseUsername };

@@ -20,6 +20,22 @@ const PRODUCTS = [
     ],
   },
   {
+    id: "vrax-spend-tracking",
+    name: "VRAX Spend Tracking",
+    kind: "product",
+    status: "stable",
+    tagline: "Daily spend tracker in a mobile app shell — data stays on the device",
+    repo: "fahnovinz/inz-ecosystem",
+    url: "https://github.com/fahnovinz/inz-ecosystem/tree/main/packages/vrax-spend-tracking",
+    license: "MIT",
+    stack: ["HTML", "CSS", "Vanilla JS", "localStorage"],
+    highlights: [
+      "Three tabs: today's budget, spend history, grouped transaction log",
+      "3-month, 6-month or 1-year spend map coloured against the daily budget",
+      "No build step, no backend, no network calls",
+    ],
+  },
+  {
     id: "github-stats",
     name: "INZ Stats",
     kind: "tool",

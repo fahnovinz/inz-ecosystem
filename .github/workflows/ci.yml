@@ -42,6 +42,7 @@ jobs:
           node --check src/products.js
           node --check src/report.js
           node --check src/utils.js
+          node --check packages/vrax-spend-tracking/app.js
 
       - name: Upload coverage (lcov)
         if: always()

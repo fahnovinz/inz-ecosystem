@@ -1,4 +1,5 @@
 const { githubFetch } = require("./github-api");
+const { parseRepo } = require("./utils");
 
 function buildBadges(repo) {
   const base = `https://img.shields.io/github`;
@@ -46,7 +47,7 @@ function buildBadges(repo) {
 }
 
 async function fetchRepoBadges(repoInput, options = {}) {
-  const [owner, repo] = repoInput.split("/");
+  const { owner, repo } = parseRepo(repoInput);
   const repoData = await githubFetch(`/repos/${owner}/${repo}`, options.token);
   return buildBadges(repoData);
 }

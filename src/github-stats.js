@@ -1,22 +1,25 @@
 const { githubFetch, githubFetchAll } = require("./github-api");
-const { daysBetween, daysAgo, oneYearAgo } = require("./utils");
+const { daysBetween, daysAgo, oneYearAgo, parseUsername } = require("./utils");
 
-async function countMergedPrs(username, token) {
+async function countMergedPrs(rawUsername, token) {
+  const username = parseUsername(rawUsername);
   const since = oneYearAgo();
   const query = `q=is:pr+author:${username}+is:merged+merged:>=${since}+-user:${username}`;
   const result = await githubFetch(`/search/issues?${query}&per_page=1`, token);
   return result.total_count || 0;
 }
 
-async function countRecentEvents(username, token) {
+async function countRecentEvents(rawUsername, token) {
+  const username = parseUsername(rawUsername);
   const events = await githubFetchAll(`/users/${username}/events/public`, token, 3);
   const cutoff = daysAgo(90);
-  const recent = events.filter((event) => event.created_at.slice(0, 10) >= cutoff);
+  const recent = events.filter((event) => (event.created_at || "").slice(0, 10) >= cutoff);
   const types = new Set(recent.map((event) => event.type));
   return { count: recent.length, types: [...types] };
 }
 
-async function analyzeRepos(username, token) {
+async function analyzeRepos(rawUsername, token) {
+  const username = parseUsername(rawUsername);
   const repos = await githubFetchAll(`/users/${username}/repos?type=owner&sort=updated`, token, 3);
   const publicRepos = repos.filter((repo) => !repo.private && !repo.fork);
 
@@ -30,7 +33,7 @@ async function analyzeRepos(username, token) {
         token
       );
       const external = contributors.filter(
-        (c) => c.login.toLowerCase() !== username.toLowerCase()
+        (c) => (c.login || "").toLowerCase() !== username.toLowerCase()
       ).length;
 
       if (external > topContributors) {
@@ -42,7 +45,7 @@ async function analyzeRepos(username, token) {
     }
   }
 
-  const totalStars = publicRepos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
+  const totalStars = publicRepos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
   const licensed = publicRepos.filter((repo) => repo.license).length;
   const languages = {};
 
@@ -73,7 +76,8 @@ async function analyzeRepos(username, token) {
   };
 }
 
-async function fetchGitHubStats(username, options = {}) {
+async function fetchGitHubStats(rawUsername, options = {}) {
+  const username = parseUsername(rawUsername);
   const token = options.token;
   const profile = await githubFetch(`/users/${username}`, token);
   const accountAgeDays = daysBetween(profile.created_at);

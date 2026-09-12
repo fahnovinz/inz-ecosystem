@@ -16,6 +16,10 @@ const VERSION = require("../package.json").version;
 const args = process.argv.slice(2);
 const command = args[0] || "help";
 
+// Flags that consume the token after them, so a positional argument is never
+// confused for a flag or for a flag's value.
+const VALUE_FLAGS = new Set(["--token", "--kind"]);
+
 function hasFlag(name) {
   return args.includes(name);
 }
@@ -23,11 +27,21 @@ function hasFlag(name) {
 function parseFlag(name) {
   const index = args.indexOf(name);
   if (index === -1) return undefined;
-  return args[index + 1];
+  const value = args[index + 1];
+  if (value === undefined || value.startsWith("--")) {
+    console.error(`Error: ${name} needs a value.\n`);
+    process.exit(1);
+  }
+  return value;
 }
 
 function positionalArg() {
-  return args[1];
+  for (let i = 1; i < args.length; i += 1) {
+    const arg = args[i];
+    if (!arg.startsWith("--")) return arg;
+    if (VALUE_FLAGS.has(arg)) i += 1;
+  }
+  return undefined;
 }
 
 function printHelp() {
@@ -148,4 +162,7 @@ async function main() {
   process.exit(1);
 }
 
-main();
+main().catch((error) => {
+  console.error(`Error: ${error.message}`);
+  process.exit(1);
+});
