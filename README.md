@@ -138,7 +138,7 @@ Deep dive: **[docs/ecosystem.md](docs/ecosystem.md)** — 30-second pitch, archi
 inz-ecosystem/
 ├── bin/inz.js                 # CLI entry
 ├── src/                       # Core modules (stats, health, badges, products)
-├── scripts/                   # PowerShell (Windows-native)
+├── scripts/                   # PowerShell (Windows-native) + shell tooling
 ├── packages/                  # Per-tool & product cards
 │   ├── vraxtal-vault/         # Reference card only (code → vraxtal-vault repo)
 │   ├── github-stats/
@@ -146,7 +146,8 @@ inz-ecosystem/
 │   └── badges/
 ├── docs/
 │   ├── ecosystem.md           # Story for portfolios & AI events
-│   └── getting-started.md
+│   ├── getting-started.md
+│   └── remote-tmux.md         # Persistent tmux in the remote container
 └── test/
 ```
 
