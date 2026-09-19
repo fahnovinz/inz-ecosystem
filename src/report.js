@@ -1,31 +1,41 @@
+const DASH = "—";
+
 function printStatsReport(report) {
+  const { profile, repoStats, recentActivity } = report;
+
   console.log("\n  INZ GitHub Stats\n");
-  console.log(`  @${report.username}  ${report.profile.url}`);
-  if (report.profile.name) console.log(`  ${report.profile.name}`);
-  if (report.profile.bio) console.log(`  ${report.profile.bio}`);
+  console.log(`  @${report.username}  ${profile.url}`);
+  if (profile.name) console.log(`  ${profile.name}`);
+  if (profile.bio) console.log(`  ${profile.bio}`);
   console.log("");
-  console.log(`  Joined        ${report.profile.createdAt} (${report.accountAgeDays}d ago)`);
-  console.log(`  Followers     ${report.profile.followers}`);
-  console.log(`  Public repos  ${report.profile.publicRepos}`);
+  console.log(`  Joined        ${profile.createdAt} (${report.accountAgeDays}d ago)`);
+  console.log(`  Followers     ${profile.followers}`);
+  console.log(`  Public repos  ${profile.publicRepos}`);
   console.log("");
-  console.log("  Activity (90d)");
-  console.log(`  Events        ${report.recentActivity.count}`);
-  console.log(`  Types         ${report.recentActivity.types.join(", ") || "—"}`);
+  console.log(`  Activity (${recentActivity.windowDays || 90}d)`);
+  console.log(`  Events        ${recentActivity.count}`);
+  console.log(`  Types         ${recentActivity.types.join(", ") || DASH}`);
   console.log(`  Merged PRs    ${report.mergedPrs} (12mo, third-party)`);
   console.log("");
   console.log("  Portfolio");
-  console.log(`  Repos         ${report.repoStats.totalPublic}`);
-  console.log(`  Stars         ${report.repoStats.totalStars}`);
-  console.log(`  Licensed      ${report.repoStats.licensed}`);
-  if (report.repoStats.topLanguages.length) {
-    const langs = report.repoStats.topLanguages.map((l) => `${l.name} (${l.repos})`).join(", ");
+  console.log(`  Repos         ${repoStats.totalPublic}`);
+  console.log(`  Stars         ${repoStats.totalStars}`);
+  console.log(`  Licensed      ${repoStats.licensed}/${repoStats.totalPublic}`);
+  if (repoStats.archived) console.log(`  Archived      ${repoStats.archived}`);
+  if (repoStats.topLanguages.length) {
+    const langs = repoStats.topLanguages.map((l) => `${l.name} (${l.repos})`).join(", ");
     console.log(`  Languages     ${langs}`);
   }
+  if (repoStats.topContributorRepo) {
+    console.log(
+      `  Collaborators ${repoStats.topContributors} on ${repoStats.topContributorRepo}`
+    );
+  }
 
-  if (report.repoStats.topRepos.length) {
+  if (repoStats.topRepos.length) {
     console.log("");
-    console.log("  Top repos");
-    for (const repo of report.repoStats.topRepos) {
+    console.log("  Top repos (by stars)");
+    for (const repo of repoStats.topRepos) {
       console.log(`  • ${repo.name}`);
       console.log(`    ${repo.stars} stars · ${repo.language} · ${repo.license}`);
     }
@@ -44,13 +54,24 @@ function printHealthReport(report) {
     const mark = check.passed ? "[ok]" : "[--]";
     console.log(`  ${mark} ${check.label}`);
   }
+
+  const failed = report.checks.filter((check) => !check.passed && check.remedy);
+  if (failed.length) {
+    console.log("");
+    console.log("  Next steps");
+    for (const check of failed) {
+      console.log(`  → ${check.remedy} (+${check.weight})`);
+    }
+  }
+
   console.log("");
   console.log("  Meta");
   console.log(`  Stars         ${report.meta.stars}`);
   console.log(`  Open issues   ${report.meta.openIssues}`);
-  console.log(`  Language      ${report.meta.language || "—"}`);
-  console.log(`  License       ${report.meta.license || "—"}`);
+  console.log(`  Language      ${report.meta.language || DASH}`);
+  console.log(`  License       ${report.meta.license || DASH}`);
   console.log(`  Last push     ${report.meta.pushedAt}`);
+  if (report.meta.archived) console.log("  Archived      yes");
   console.log("");
 }
 

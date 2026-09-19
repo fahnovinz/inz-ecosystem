@@ -130,3 +130,59 @@ describe("report printers", () => {
     assert.match(out, /inz stats/);
   });
 });
+
+describe("report printers — optional sections", () => {
+  it("printStatsReport shows archived count and top collaborator repo", () => {
+    const out = capture(() =>
+      printStatsReport({
+        username: "demo",
+        accountAgeDays: 10,
+        profile: { url: "https://github.com/demo", createdAt: "2020-01-01", followers: 0, publicRepos: 1 },
+        recentActivity: { windowDays: 90, count: 0, types: [] },
+        mergedPrs: 0,
+        repoStats: {
+          totalPublic: 3,
+          totalStars: 0,
+          licensed: 1,
+          archived: 2,
+          topContributors: 4,
+          topContributorRepo: "demo/app",
+          topLanguages: [],
+          topRepos: [],
+        },
+      })
+    );
+
+    assert.match(out, /Archived\s+2/);
+    assert.match(out, /Collaborators 4 on demo\/app/);
+    assert.match(out, /Types\s+—/);
+  });
+
+  it("printHealthReport lists next steps for failing checks only", () => {
+    const out = capture(() =>
+      printHealthReport({
+        fullName: "demo/app",
+        url: "https://github.com/demo/app",
+        score: 75,
+        grade: "Good",
+        checks: [
+          { id: "readme", label: "README present", weight: 15, passed: true },
+          { id: "topics", label: "Topics configured", weight: 10, passed: false, remedy: "Add topics." },
+        ],
+        meta: {
+          stars: 0,
+          openIssues: 0,
+          language: null,
+          license: null,
+          pushedAt: "2026-01-01T00:00:00Z",
+          archived: true,
+        },
+      })
+    );
+
+    assert.match(out, /Next steps/);
+    assert.match(out, /→ Add topics\. \(\+10\)/);
+    assert.ok(!out.includes("README present (+"), "passing checks must not appear as next steps");
+    assert.match(out, /Archived\s+yes/);
+  });
+});

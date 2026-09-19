@@ -345,3 +345,66 @@ describe("github-stats helpers (unit, mocked network)", () => {
     assert.equal(stats.totalPublic, 1);
   });
 });
+
+describe("github-stats — ranking and validation", () => {
+  afterEach(() => {
+    resetFetch();
+  });
+
+  it("ranks topRepos by stars, not by last update", async () => {
+    setFetch(async (input) => {
+      const url = new URL(String(input));
+      const page = url.searchParams.get("page") || "1";
+      let body = [];
+      if (url.pathname === "/users/octocat/repos" && page === "1") {
+        body = [
+          { full_name: "octocat/fresh", private: false, fork: false, stargazers_count: 1, updated_at: "2026-09-01T00:00:00Z", language: "JS" },
+          { full_name: "octocat/popular", private: false, fork: false, stargazers_count: 99, updated_at: "2024-01-01T00:00:00Z", language: "JS" },
+          { full_name: "octocat/middle", private: false, fork: false, stargazers_count: 10, updated_at: "2025-01-01T00:00:00Z", language: "Go" },
+        ];
+      }
+      return { ok: true, status: 200, json: async () => body, text: async () => "[]" };
+    });
+
+    const stats = await analyzeRepos("octocat", null);
+    assert.deepEqual(
+      stats.topRepos.map((r) => r.name),
+      ["octocat/popular", "octocat/middle", "octocat/fresh"]
+    );
+    assert.equal(stats.totalStars, 110);
+  });
+
+  it("rejects an invalid username before hitting the network", async () => {
+    setFetch(async () => {
+      throw new Error("network should not be used");
+    });
+    await assert.rejects(() => countMergedPrs("bad user", null), /Invalid GitHub username/);
+    await assert.rejects(() => analyzeRepos("-nope", null), /Invalid GitHub username/);
+  });
+
+  it("URL-encodes the merged-PR search query", async () => {
+    const seen = [];
+    setFetch(async (input) => {
+      seen.push(String(input));
+      return { ok: true, status: 200, json: async () => ({ total_count: 7 }), text: async () => "" };
+    });
+
+    const count = await countMergedPrs("octocat", null);
+    assert.equal(count, 7);
+    assert.ok(!seen[0].includes(" "), "query must not contain raw spaces");
+    assert.match(decodeURIComponent(seen[0]), /is:pr author:octocat is:merged/);
+  });
+
+  it("ignores events without a timestamp", async () => {
+    setFetch(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => [{ type: "PushEvent" }, { type: "PushEvent", created_at: new Date().toISOString() }],
+      text: async () => "",
+    }));
+
+    const activity = await countRecentEvents("octocat", null);
+    assert.equal(activity.count, 1);
+    assert.equal(activity.windowDays, 90);
+  });
+});

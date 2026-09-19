@@ -1,12 +1,23 @@
 {
-  "include": ["src/**/*.js"],
-  "exclude": ["test/**", "node_modules/**"],
-  "reporter": ["text", "text-summary", "lcov", "html"],
+  "include": [
+    "src/**/*.js",
+    "bin/**/*.js"
+  ],
+  "exclude": [
+    "test/**",
+    "node_modules/**"
+  ],
+  "reporter": [
+    "text",
+    "text-summary",
+    "lcov",
+    "html"
+  ],
   "report-dir": "coverage",
   "all": true,
   "check-coverage": true,
-  "lines": 80,
-  "functions": 80,
-  "branches": 70,
-  "statements": 80
+  "lines": 90,
+  "functions": 90,
+  "branches": 85,
+  "statements": 90
 }

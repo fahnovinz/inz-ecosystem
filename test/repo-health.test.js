@@ -4,7 +4,10 @@ const {
   fetchRepoHealth,
   scoreFromContext,
   CHECKS,
+  REMEDIES,
   hasWorkflows,
+  hasReadmeFile,
+  hasContributingFile,
 } = require("../src/repo-health");
 const { setFetch, resetFetch } = require("../src/github-api");
 
@@ -153,5 +156,76 @@ describe("repo-health network (mocked)", () => {
     assert.equal(report.grade, "Excellent");
     assert.equal(report.meta.license, "MIT");
     assert.ok(report.checks.find((c) => c.id === "ci").passed);
+  });
+});
+
+describe("repo-health — detection fallbacks", () => {
+  afterEach(() => {
+    resetFetch();
+  });
+
+  function router(handler) {
+    setFetch(async (input) => {
+      const path = new URL(String(input)).pathname;
+      const body = handler(path);
+      if (body === undefined) {
+        return { ok: false, status: 404, json: async () => ({}), text: async () => "Not Found" };
+      }
+      return { ok: true, status: 200, json: async () => body, text: async () => "" };
+    });
+  }
+
+  it("finds a lowercase readme via the readme endpoint", async () => {
+    router((path) => (path === "/repos/o/r/readme" ? { name: "readme.rst" } : undefined));
+    assert.equal(await hasReadmeFile("o", "r", null), true);
+  });
+
+  it("reports no readme when both lookups fail", async () => {
+    router(() => undefined);
+    assert.equal(await hasReadmeFile("o", "r", null), false);
+  });
+
+  it("finds CONTRIBUTING under .github/", async () => {
+    router((path) =>
+      path === "/repos/o/r/contents/.github/CONTRIBUTING.md" ? { name: "CONTRIBUTING.md" } : undefined
+    );
+    assert.equal(await hasContributingFile("o", "r", null), true);
+  });
+
+  it("reports no contributing guide when no candidate path exists", async () => {
+    router(() => undefined);
+    assert.equal(await hasContributingFile("o", "r", null), false);
+  });
+
+  it("attaches an actionable remedy to every failing check", () => {
+    const { checks } = scoreFromContext({
+      repo: { description: "", license: null, has_issues: false, pushed_at: null },
+      topics: [],
+      hasReadme: false,
+      hasContributing: false,
+      hasCi: false,
+    });
+
+    assert.ok(checks.every((c) => !c.passed));
+    assert.ok(checks.every((c) => typeof c.remedy === "string" && c.remedy.length > 0));
+    assert.equal(Object.keys(REMEDIES).length, CHECKS.length);
+  });
+
+  it("treats a missing pushed_at as stale rather than throwing", () => {
+    const { checks } = scoreFromContext({
+      repo: { description: "x", license: { spdx_id: "MIT" }, has_issues: true },
+      topics: ["cli"],
+      hasReadme: true,
+      hasContributing: true,
+      hasCi: true,
+    });
+    assert.equal(checks.find((c) => c.id === "recent").passed, false);
+  });
+
+  it("rejects a malformed repo argument before hitting the network", async () => {
+    setFetch(async () => {
+      throw new Error("network should not be used");
+    });
+    await assert.rejects(() => fetchRepoHealth("nope"), /Invalid repo format/);
   });
 });

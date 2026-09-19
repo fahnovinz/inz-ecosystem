@@ -55,3 +55,47 @@ describe("badges", () => {
     assert.match(result.markdown, /GitHub stars/);
   });
 });
+
+describe("badges — options and input forms", () => {
+  afterEach(() => {
+    resetFetch();
+  });
+
+  it("honours a custom shields style", () => {
+    const result = buildBadges(
+      { full_name: "a/b", html_url: "https://github.com/a/b", name: "b", owner: { login: "a" } },
+      { style: "for-the-badge" }
+    );
+    assert.equal(result.style, "for-the-badge");
+    assert.ok(result.badges.every((item) => item.markdown.includes("style=for-the-badge")));
+  });
+
+  it("accepts a full GitHub URL", async () => {
+    const seen = [];
+    setFetch(async (input) => {
+      seen.push(new URL(String(input)).pathname);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          full_name: "a/b",
+          html_url: "https://github.com/a/b",
+          name: "b",
+          owner: { login: "a" },
+        }),
+        text: async () => "",
+      };
+    });
+
+    const result = await fetchRepoBadges("https://github.com/a/b.git");
+    assert.equal(seen[0], "/repos/a/b");
+    assert.equal(result.fullName, "a/b");
+  });
+
+  it("rejects a malformed repo before hitting the network", async () => {
+    setFetch(async () => {
+      throw new Error("network should not be used");
+    });
+    await assert.rejects(() => fetchRepoBadges("oops"), /Invalid repo format/);
+  });
+});

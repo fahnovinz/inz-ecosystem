@@ -1,13 +1,31 @@
 const { githubFetch } = require("./github-api");
-const { daysBetween } = require("./utils");
+const { daysBetween, parseRepo } = require("./utils");
+
+const FRESHNESS_DAYS = 90;
+
+/** Common homes for a contributing guide, in the order GitHub itself resolves them. */
+const CONTRIBUTING_PATHS = [
+  "CONTRIBUTING.md",
+  ".github/CONTRIBUTING.md",
+  "docs/CONTRIBUTING.md",
+  "CONTRIBUTING",
+];
 
 async function fetchTopics(owner, repo, token) {
   try {
-    // Topics endpoint needs the mercurial/mercy preview historically; vnd.github+json works on modern API.
     const data = await githubFetch(`/repos/${owner}/${repo}/topics`, token);
     return data;
   } catch {
     return { names: [] };
+  }
+}
+
+function isFresh(pushedAt) {
+  if (!pushedAt) return false;
+  try {
+    return daysBetween(pushedAt) <= FRESHNESS_DAYS;
+  } catch {
+    return false;
   }
 }
 
@@ -56,11 +74,23 @@ const CHECKS = [
   },
   {
     id: "recent",
-    label: "Updated within 90 days",
+    label: `Updated within ${FRESHNESS_DAYS} days`,
     weight: 15,
-    test: (ctx) => daysBetween(ctx.repo.pushed_at) <= 90,
+    test: (ctx) => isFresh(ctx.repo.pushed_at),
   },
 ];
+
+/** Actionable advice per failing check — a score without a next step is just a number. */
+const REMEDIES = {
+  description: "Add a one-line description in repo settings (also shown in search results).",
+  readme: "Add a README.md covering what it does, install, and usage.",
+  license: "Add a LICENSE file so others know the terms of reuse.",
+  topics: "Add 3–8 topics in repo settings to make the project discoverable.",
+  ci: "Add a workflow under .github/workflows/ that at least runs the test suite.",
+  contributing: "Add CONTRIBUTING.md describing how to run tests and open a PR.",
+  issues: "Enable Issues in repo settings so users have a place to report bugs.",
+  recent: `Push something — the repo looks stale after ${FRESHNESS_DAYS} days.`,
+};
 
 async function fileExists(owner, repo, path, token) {
   try {
@@ -72,7 +102,28 @@ async function fileExists(owner, repo, path, token) {
 }
 
 /**
- * Prefer Actions workflows API; fall back to listing `.github/workflows/*.{yml,yaml}`
+ * Root `README.md` first (cheap, and the common case), then the dedicated readme
+ * endpoint, which resolves any casing or extension GitHub itself accepts.
+ */
+async function hasReadmeFile(owner, repo, token) {
+  if (await fileExists(owner, repo, "README.md", token)) return true;
+  try {
+    const data = await githubFetch(`/repos/${owner}/${repo}/readme`, token);
+    return Boolean(data && data.name);
+  } catch {
+    return false;
+  }
+}
+
+async function hasContributingFile(owner, repo, token) {
+  for (const candidate of CONTRIBUTING_PATHS) {
+    if (await fileExists(owner, repo, candidate, token)) return true;
+  }
+  return false;
+}
+
+/**
+ * Prefer the Actions workflows API; fall back to listing `.github/workflows/*.{yml,yaml}`
  * so a workflow_dispatch-only or billing-limited Actions account still counts as "CI present".
  */
 async function hasWorkflows(owner, repo, token) {
@@ -93,12 +144,16 @@ async function hasWorkflows(owner, repo, token) {
 }
 
 function scoreFromContext(ctx) {
-  const checks = CHECKS.map((check) => ({
-    id: check.id,
-    label: check.label,
-    weight: check.weight,
-    passed: check.test(ctx),
-  }));
+  const checks = CHECKS.map((check) => {
+    const passed = check.test(ctx);
+    return {
+      id: check.id,
+      label: check.label,
+      weight: check.weight,
+      passed,
+      ...(passed ? {} : { remedy: REMEDIES[check.id] }),
+    };
+  });
 
   const score = checks.reduce((sum, check) => sum + (check.passed ? check.weight : 0), 0);
 
@@ -112,13 +167,13 @@ function scoreFromContext(ctx) {
 
 async function fetchRepoHealth(repoInput, options = {}) {
   const token = options.token;
-  const [owner, repo] = repoInput.split("/");
+  const { owner, repo } = parseRepo(repoInput);
 
   const [repoData, topicsPayload, hasReadme, hasContributing, hasCi] = await Promise.all([
     githubFetch(`/repos/${owner}/${repo}`, token),
     fetchTopics(owner, repo, token),
-    fileExists(owner, repo, "README.md", token),
-    fileExists(owner, repo, "CONTRIBUTING.md", token),
+    hasReadmeFile(owner, repo, token),
+    hasContributingFile(owner, repo, token),
     hasWorkflows(owner, repo, token),
   ]);
 
@@ -146,8 +201,17 @@ async function fetchRepoHealth(repoInput, options = {}) {
       license: repoData.license?.spdx_id || null,
       pushedAt: repoData.pushed_at,
       defaultBranch: repoData.default_branch,
+      archived: Boolean(repoData.archived),
     },
   };
 }
 
-module.exports = { fetchRepoHealth, CHECKS, scoreFromContext, hasWorkflows };
+module.exports = {
+  fetchRepoHealth,
+  CHECKS,
+  REMEDIES,
+  scoreFromContext,
+  hasWorkflows,
+  hasReadmeFile,
+  hasContributingFile,
+};

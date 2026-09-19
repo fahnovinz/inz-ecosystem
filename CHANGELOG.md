@@ -4,6 +4,37 @@ All notable changes to INZ Ecosystem are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-19
+
+### Added
+- **Retries with backoff** on 5xx and network errors, plus a per-request timeout (`--timeout`, default 15s)
+- **Actionable health remedies** — every failing check now carries a concrete next step, printed under "Next steps"
+- **Multi-repo health**: `inz health owner/a owner/b` scores several repos and prints an average
+- `GITHUB_API_URL` support for GitHub Enterprise hosts
+- `--style` flag for `inz badges` (any shields.io style)
+- `parseUser()` username validation and repo/user inputs that accept full GitHub URLs or `git@` remotes
+- `npm run lint` — dependency-free syntax gate over every tracked JS file (`scripts/lint.js`)
+- `npm run verify` — lint + coverage in one command
+- CI matrix across Node 18/20/22, an npm cache, a dependency-audit job, and `.github/dependabot.yml`
+- Test suites for the CLI (`test/cli.test.js`), API resilience, detection fallbacks, and report sections — 68 tests total
+
+### Changed
+- `GitHubApiError` carries `status` / `rateLimited`, and rate-limit, 401, 403 and 404 responses now explain what to do instead of echoing the raw body
+- **Top repos are ranked by stars** instead of last-update time, and the collaborator signal is finally printed
+- `inz` exits **2** for usage errors and **1** for runtime failures, so scripts can tell them apart
+- README detection falls back to GitHub's `/readme` endpoint (any casing/extension); CONTRIBUTING is also looked up under `.github/` and `docs/`
+- `bin/inz.js` is importable — it only drives the process when run as a command
+- Coverage thresholds raised to 90% lines/functions/statements and 85% branches, now including `bin/`
+- CI and `scripts/verify.ps1` discover files to syntax-check instead of carrying a hand-maintained list
+
+### Fixed
+- Search queries are URL-encoded, so unusual usernames no longer corrupt the request
+- `daysAgo()` / `oneYearAgo()` compute in **UTC**, matching GitHub timestamps instead of the local clock
+- A missing or malformed `pushed_at` no longer throws while scoring freshness
+- `require`-time crash removed: `fetch` is resolved lazily with a clear "Node.js 18+" message
+- Unhandled promise rejections from the CLI entry point
+- `EPIPE` when piping CLI output into `head` and friends
+
 ## [0.3.2] — 2026-07-31
 
 ### Added

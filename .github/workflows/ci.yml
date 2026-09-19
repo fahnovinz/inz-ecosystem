@@ -10,18 +10,33 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Test (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Lowest supported version, current LTS, and current release.
+        node: ["18", "20", "22"]
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ matrix.node }}
+          cache: npm
 
       - name: Install dev dependencies
         run: npm ci
+
+      - name: Lint (syntax)
+        run: npm run lint
 
       - name: Run tests with coverage
         run: npm run test:coverage
@@ -31,22 +46,37 @@ jobs:
           node bin/inz.js help
           node bin/inz.js version
           node bin/inz.js products --json
+          node bin/inz.js products --kind tool
 
-      - name: Syntax check
+      - name: Verify CLI exit codes
         run: |
-          node --check bin/inz.js
-          node --check src/github-stats.js
-          node --check src/repo-health.js
-          node --check src/badges.js
-          node --check src/github-api.js
-          node --check src/products.js
-          node --check src/report.js
-          node --check src/utils.js
+          set +e
+          node bin/inz.js definitely-not-a-command >/dev/null 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 2 ]; then
+            echo "Expected exit code 2 for an unknown command, got $code"
+            exit 1
+          fi
 
       - name: Upload coverage (lcov)
-        if: always()
+        if: always() && matrix.node == '20'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-lcov
           path: coverage/lcov.info
           if-no-files-found: ignore
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Audit (fail on high or critical)
+        run: npm audit --audit-level=high
