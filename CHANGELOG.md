@@ -16,7 +16,7 @@ All notable changes to INZ Ecosystem are documented here.
 - `npm run lint` — dependency-free syntax gate over every tracked JS file (`scripts/lint.js`)
 - `npm run verify` — lint + coverage in one command
 - CI matrix across Node 18/20/22, an npm cache, a dependency-audit job, and `.github/dependabot.yml`
-- Test suites for the CLI (`test/cli.test.js`), API resilience, detection fallbacks, and report sections — 68 tests total
+- Test suites for the CLI (`test/cli.test.js`), API resilience, detection fallbacks, and report sections — 70 tests total
 
 ### Changed
 - `GitHubApiError` carries `status` / `rateLimited`, and rate-limit, 401, 403 and 404 responses now explain what to do instead of echoing the raw body
