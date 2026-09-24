@@ -21,6 +21,7 @@ All notable changes to INZ Ecosystem are documented here.
 - VRAX World streets at real proportions: two 3.5 m lanes each way, 3 m sidewalks, mid-block crossings and a larger city (186 × 120 m); vehicles hold their lane, take wider turns, and junctions let movements that don't cross go together without blocking the box
 
 ### Fixed
+- Turning the VRAX World camera went the wrong way: a clockwise two-finger twist now turns the city clockwise, and right-dragging to the right turns it the same way as the turn-right button
 - Pinch and twist failing on phones when a finger landed on a place label, and pinches outside the city zooming the whole page
 - Gridlock in VRAX World traffic: cars at right angles or side by side no longer wait on each other forever, and long-stuck drivers edge through junction knots
 

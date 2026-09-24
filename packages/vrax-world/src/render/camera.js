@@ -210,7 +210,8 @@ export class CameraRig {
     }
     this.takeOver();
     if (p.rotate) {
-      this.want.az -= (x - p.x) * 0.006;
+      // Drag right turns the city clockwise, same as the turn-right button.
+      this.want.az += (x - p.x) * 0.006;
       this.want.el += (y - p.y) * 0.004;
     } else {
       this.dragGround(p.x, p.y, x, y);
@@ -247,7 +248,9 @@ export class CameraRig {
       let da = now.ang - last.ang;
       if (da > Math.PI) da -= Math.PI * 2;
       if (da < -Math.PI) da += Math.PI * 2;
-      this.want.az -= da;
+      // Screen angles grow clockwise (y points down) and so does az on screen,
+      // so the city turns with the fingers.
+      this.want.az += da;
       this.snap();
       // Pin the ground point between the fingers so zoom and twist happen around them.
       const moved = anchor && this.groundAt(now.mx, now.my);
