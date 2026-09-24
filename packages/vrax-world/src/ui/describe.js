@@ -300,7 +300,7 @@ export function describeVehicle(v, state, world) {
     else if (v.unreach && !v.turned && v.v < 0.5) status = t('v.waitBarrier');
     else if (v.turned) status = t('v.turned');
     else if (v.goal && v.goal.k === 'parking') status = t('v.toParking');
-    else if (v.waitT > 1.2) status = t('v.waiting');
+    else if (v.waitT > 1.2) status = v._why === 'crossing' ? t('v.waitCross') : v._why && v._why.startsWith('claim') ? t('v.waitJunction') : t('v.waiting');
     else status = t('v.toExit', { place: exitName(world, v.goal && v.goal.node) });
   } else if (v.role === 'bus') status = v.st === 'stop' ? t('v.busStop') : t('v.busLoop');
   else if (v.role === 'fire') {

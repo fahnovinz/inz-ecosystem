@@ -264,4 +264,4 @@ if (renderer) {
 }
 
 // Handy for debugging from the console.
-window.vraxWorld = { app, get state() { return state; }, interpret };
+window.vraxWorld = { app, get state() { return state; }, get renderer() { return renderer; }, interpret };

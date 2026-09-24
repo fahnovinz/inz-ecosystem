@@ -11,6 +11,11 @@ All notable changes to INZ Ecosystem are documented here.
 - `inz world` command and `npm run world` (zero-dependency static server bound to 127.0.0.1, `src/world-server.js`)
 - VRAX World in the product catalog; `inz products` now lists non-flagship products under “Products”
 - Tests: interpreter (EN/ID), headless simulation scenarios, static server
+- Residents drawn as articulated low-poly figures (walking arms and legs, hair, hijab, peci, kids) in one instanced draw call
+- Drivers stop for pedestrians on zebra crossings; the inspector says why a vehicle is waiting
+
+### Fixed
+- Gridlock in VRAX World traffic: cars at right angles or side by side no longer wait on each other forever, and long-stuck drivers edge through junction knots
 
 ## [0.3.2] — 2026-07-31
 

@@ -8,6 +8,8 @@ You change the city by typing, in **English or Bahasa Indonesia**. A rule-based 
 
 ![VRAX World by day, with a festival in Taman Vrax](docs/vrax-world-day.jpg)
 
+![Street level: residents walking past the market stalls](docs/vrax-world-street.jpg)
+
 ![VRAX World at night: rain, a fire at the school and VRAX Tower lit up](docs/vrax-world-night.jpg)
 
 ## Run it
@@ -65,7 +67,7 @@ The interpreter understands paraphrases, place names, amounts (`50 cm`, `setenga
 | Blackout | Windows and street lamps go dark, people come out with phone torches, and only VRAX Tower stays lit on backup power. |
 | Time of day / season | Sun, shadows, window lights and street lamps follow the clock. Winter covers roofs and parks in snow; autumn turns the trees. |
 
-Traffic keeps left, as in Indonesia. Motorbikes, taxis and the TransVrax bus loop share the roads.
+Traffic keeps left, as in Indonesia. Motorbikes, taxis and the TransVrax bus loop share the roads, and drivers stop for people on zebra crossings. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
 
 ## Controls
 
@@ -97,13 +99,14 @@ packages/vrax-world/
     │   ├── events.js      fire, robbery, festival crowds, boats
     │   ├── actions.js     applies one command, reports what changed
     │   └── state.js, step.js, rng.js, common.js
-    ├── render/            three.js scene, city meshes, agents, effects, camera
+    ├── render/            three.js scene, city meshes, people, vehicles, effects, camera
     └── ui/                DOM interface and the sentences it shows
 ```
 
 - **State is plain data.** The whole city, including the seeded RNG, fits in one object, so `structuredClone` gives an exact snapshot for undo and the showcase.
 - **The simulation runs without a browser.** `test/vrax-world.test.js` builds the world in Node, runs the clock, closes bridges, starts fires and checks the outcomes.
-- **Rendering reads state every frame.** Instanced meshes for people and vehicles, merged geometry for the city, and a small shader patch that adds snow on upward faces and a wet look on roads.
+- **Rendering reads state every frame.** Merged geometry for the city, instanced vehicles, and a small shader patch that adds snow on upward faces and a wet look on roads.
+- **One draw call for the whole crowd.** Every resident is an instance of a single low-poly figure; a vertex shader swings the arms and legs and picks the clothes, skin, hair or hijab colours per instance.
 
 ## Tests
 

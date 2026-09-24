@@ -2,10 +2,9 @@
 
 import * as THREE from 'three';
 import { radialTexture } from './materials.js';
+import { makePeople } from './people.js';
 
-const MAX_PEOPLE = 420;
 const MAX_VEHICLES = 160;
-const PERSON_SCALE = 1.35;
 
 // Vehicle parts in local space: [x, y, z, w, h, d, material]; z points forward.
 // Materials: p = paint, g = glass, d = dark, w = white, h = headlight, t = taillight, s = siren, a = accent, y = taxi sign
@@ -33,33 +32,7 @@ export function makeAgents(scene) {
   const Y = new THREE.Vector3(0, 1, 0);
   const col = new THREE.Color();
 
-  // People: body, head, umbrella.
-  const bodyGeo = new THREE.CylinderGeometry(0.25, 0.3, 1.15, 6);
-  bodyGeo.translate(0, 0.6, 0);
-  const headGeo = new THREE.IcosahedronGeometry(0.22, 0);
-  headGeo.translate(0, 1.42, 0);
-  const umbGeo = new THREE.ConeGeometry(0.8, 0.35, 8);
-  umbGeo.translate(0, 2.05, 0);
-  const pMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
-  const bodies = new THREE.InstancedMesh(bodyGeo, pMat, MAX_PEOPLE);
-  const heads = new THREE.InstancedMesh(headGeo, new THREE.MeshStandardMaterial({ roughness: 0.7 }), MAX_PEOPLE);
-  const umbrellas = new THREE.InstancedMesh(umbGeo, new THREE.MeshStandardMaterial({ roughness: 0.6, side: THREE.DoubleSide }), MAX_PEOPLE);
-  for (const m of [bodies, heads, umbrellas]) {
-    m.castShadow = true;
-    m.count = 0;
-    m.frustumCulled = false;
-    m.setColorAt(0, col.set(0xffffff));
-    scene.add(m);
-  }
-
-  // Phone torches during a blackout.
-  const torchPos = new Float32Array(MAX_PEOPLE * 3);
-  const torchGeo = new THREE.BufferGeometry();
-  torchGeo.setAttribute('position', new THREE.BufferAttribute(torchPos, 3));
-  const torchMat = new THREE.PointsMaterial({ size: 3.4, map: radialTexture('rgba(235,245,255,1)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xe8f4ff });
-  const torches = new THREE.Points(torchGeo, torchMat);
-  torches.frustumCulled = false;
-  scene.add(torches);
+  const people = makePeople(scene);
 
   // Vehicles: one instanced mesh per material class.
   const unit = new THREE.BoxGeometry(1, 1, 1);
@@ -111,46 +84,7 @@ export function makeAgents(scene) {
 
   function update(state, env, time, selection) {
     // ---- People
-    let n = 0, u = 0, torch = 0;
-    const wet = state.weather === 'rain' || state.weather === 'storm';
-    const nightTorch = state.blackout && env.night > 0.5;
-    screen.people.length = 0;
-    for (const p of state.people) {
-      if (p.st !== 'walk' && p.st !== 'idle') continue;
-      if (n >= MAX_PEOPLE) break;
-      const walking = p.st === 'walk';
-      const bob = walking ? Math.abs(Math.sin(time * 9 + p.id)) * 0.08 : 0;
-      let x = p.x, z = p.z;
-      if (walking && p.kind === 'res') {
-        const c = Math.cos(p.hd), s = Math.sin(p.hd);
-        x += c * p.lat; z -= s * p.lat;
-      }
-      Q.setFromAxisAngle(Y, p.hd);
-      M.compose(P.set(x, 0.14 + bob, z), Q, S.setScalar(PERSON_SCALE));
-      bodies.setMatrixAt(n, M);
-      heads.setMatrixAt(n, M);
-      bodies.setColorAt(n, col.set(p.clothes));
-      heads.setColorAt(n, col.set(p.skin));
-      if (wet && p.hasUmb && p.kind === 'res') {
-        umbrellas.setMatrixAt(u, M);
-        umbrellas.setColorAt(u, col.set(p.umbColor));
-        u++;
-      }
-      if (nightTorch && walking && (p.id % 3 !== 0)) {
-        torchPos[torch * 3] = x + Math.sin(p.hd) * 0.6; torchPos[torch * 3 + 1] = 1.4; torchPos[torch * 3 + 2] = z + Math.cos(p.hd) * 0.6;
-        torch++;
-      }
-      screen.people.push(p.id, x, z);
-      n++;
-    }
-    bodies.count = heads.count = n;
-    umbrellas.count = u;
-    for (const m of [bodies, heads, umbrellas]) {
-      m.instanceMatrix.needsUpdate = true;
-      if (m.instanceColor) m.instanceColor.needsUpdate = true;
-    }
-    torchGeo.setDrawRange(0, torch);
-    torchGeo.attributes.position.needsUpdate = true;
+    people.update(state, env, time, screen.people);
 
     // ---- Vehicles
     const counts = Object.fromEntries(MAT_KEYS.map((k) => [k, 0]));

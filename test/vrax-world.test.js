@@ -123,6 +123,14 @@ describe("vrax-world simulation", () => {
     assert.ok(outdoorCount(state) > 50);
   });
 
+  it("keeps everyday traffic moving (no gridlock)", () => {
+    const s = createState(world, 20260924);
+    for (let i = 0; i < 30 * 300; i++) step(s, world, 1 / 30);
+    const stuck = s.vehicles.filter((v) => v.st === "drive" && v.waitT > 30);
+    assert.equal(stuck.length, 0, `stuck vehicles: ${stuck.map((v) => v.id).join(",")}`);
+    assert.ok(waitingCount(s) < 15, `waiting ${waitingCount(s)}`);
+  });
+
   it("is deterministic for a seed", () => {
     const a = createState(world, 99);
     const b = createState(world, 99);

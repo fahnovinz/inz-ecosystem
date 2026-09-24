@@ -6,6 +6,7 @@ import { rand, range, pick, chance, weighted } from './rng.js';
 import { buildPolyline, routeNodes, sampleAt, arcAtX, edgeBetween } from './roads.js';
 import { edgeBlocked, edgeCost, hourOf, isWet, flood1, flood2 } from './common.js';
 import { PARKING_ENTRY_Z } from '../world/layout.js';
+import { cellIndex, T } from './nav.js';
 
 export const VTYPES = {
   car: { len: 4.2, vmax: 9 },
@@ -389,6 +390,13 @@ export function vehiclesStep(state, world, dt, ctx) {
 
   const vs = state.vehicles;
   for (const v of vs) { v._fx = Math.sin(v.hd); v._fz = Math.cos(v.hd); }
+  // Pedestrians on a zebra crossing have right of way.
+  const crossers = [];
+  for (const p of state.people) {
+    if (p.st !== 'walk') continue;
+    const idx = cellIndex(p.x, p.z);
+    if (idx >= 0 && world.grid.type[idx] === T.CROSS) crossers.push(p.x, p.z);
+  }
 
   for (const v of vs) {
     if (v.st === 'parked') {
@@ -417,21 +425,41 @@ export function vehiclesStep(state, world, dt, ctx) {
 
     let target = speedLimit(state, world, v);
 
-    // Keep distance to whatever is in front.
+    // Keep distance to whatever is in front, going roughly the same way.
+    // Crossing traffic is the junction claims' job; following it would let two
+    // cars at right angles wait on each other forever.
     const emergency = EMERGENCY.has(v.role);
+    // A driver stuck for a while (not at a barrier) edges forward so knots untangle.
+    const impatient = v.waitT > 8 && v.stopS === null;
+    v._why = '';
     let gap = Infinity;
     for (const o of vs) {
       if (o === v || o.st === 'parked') continue;
+      if (o._fx * v._fx + o._fz * v._fz < 0.5) continue;
+      if (impatient && o.waitT > 8 && o.stopS === null) continue;
       const dx = o.x - v.x, dz = o.z - v.z;
       const along = dx * v._fx + dz * v._fz;
       if (along <= 0 || along > 14) continue;
       const lat = Math.abs(dx * v._fz - dz * v._fx);
       if (lat > (emergency ? 1.0 : 1.35)) continue;
-      if (o._fx * v._fx + o._fz * v._fz < -0.3) continue;
+      // Side by side at a slight angle both cars can look "ahead" of each other;
+      // only the one that is further behind yields.
+      const back = -(dx * o._fx + dz * o._fz);
+      if (back > along || (back === along && v.id < o.id)) continue;
       const g = along - (v.len + o.len) / 2;
-      if (g < gap) gap = g;
+      if (g < gap) { gap = g; v._why = `gap:${o.id}`; }
     }
     if (gap < Infinity) target = Math.min(target, Math.max(0, (gap - 1.4) * 1.5));
+    if (!emergency) {
+      for (let i = 0; i < crossers.length; i += 2) {
+        const dx = crossers[i] - v.x, dz = crossers[i + 1] - v.z;
+        const along = dx * v._fx + dz * v._fz;
+        if (along <= 0 || along > v.len / 2 + 5) continue;
+        if (Math.abs(dx * v._fz - dz * v._fx) > 1.9) continue;
+        target = Math.min(target, Math.max(0, (along - v.len / 2 - 1.2) * 1.5));
+        v._why = 'crossing';
+      }
+    }
 
     // Junctions: one conflicting movement at a time.
     while (v.zi < v.zones.length && v.s > v.zones[v.zi].s1) {
@@ -440,11 +468,11 @@ export function vehiclesStep(state, world, dt, ctx) {
       if (c && c.id === v.id) delete state.claims[z.node];
       v.zi++;
     }
-    if (!emergency && v.zi < v.zones.length) {
+    if (!emergency && !impatient && v.zi < v.zones.length) {
       const z = v.zones[v.zi];
       const dist = z.s0 - v.s;
       if (dist < 5 && dist > -0.2) {
-        if (!tryClaim(state, v, z)) target = Math.min(target, Math.max(0, (dist - 0.6) * 1.5));
+        if (!tryClaim(state, v, z)) { target = Math.min(target, Math.max(0, (dist - 0.6) * 1.5)); v._why = `claim:${z.node}`; }
       } else if (dist <= -0.2) {
         const c = state.claims[z.node];
         if (c && c.id === v.id) c.t = t;

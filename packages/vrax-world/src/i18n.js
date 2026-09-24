@@ -77,7 +77,7 @@ const EN = {
   'v.fireSpray': 'Fighting the fire at {place}', 'v.fireHome': 'Returning to the Fire Station', 'v.fireBlocked': 'Cannot reach the fire: the route is closed',
   'v.chasing': 'Chasing the getaway car', 'v.policeHome': 'Returning to the Police Station', 'v.policeCaught': 'Robbers caught',
   'v.fleeing': 'Fleeing towards {place}', 'v.getawayWait': 'Waiting for the robbers', 'v.getawayCaught': 'Caught by the police',
-  'v.waiting': 'Stuck in traffic', 'v.speed': '{n} km/h',
+  'v.waiting': 'Stuck in traffic', 'v.waitCross': 'Stopped for people on the crossing', 'v.waitJunction': 'Waiting its turn at the junction', 'v.speed': '{n} km/h',
 
   'n.weather.rain': 'It is raining', 'n.weather.storm': 'A thunderstorm rolls in', 'n.weather.snow': 'Snow is falling',
   'n.weather.fog': 'Fog settles over the river', 'n.weather.cloudy': 'Clouds roll in', 'n.weather.clear': 'The sky clears',
@@ -259,7 +259,7 @@ const ID = {
   'v.fireSpray': 'Memadamkan api di {place}', 'v.fireHome': 'Kembali ke Pos Pemadam', 'v.fireBlocked': 'Tidak bisa ke lokasi: rutenya ditutup',
   'v.chasing': 'Mengejar mobil kabur', 'v.policeHome': 'Kembali ke Kantor Polisi', 'v.policeCaught': 'Perampok tertangkap',
   'v.fleeing': 'Kabur menuju {place}', 'v.getawayWait': 'Menunggu perampok', 'v.getawayCaught': 'Tertangkap polisi',
-  'v.waiting': 'Terjebak macet', 'v.speed': '{n} km/jam',
+  'v.waiting': 'Terjebak macet', 'v.waitCross': 'Berhenti, ada orang menyeberang', 'v.waitJunction': 'Menunggu giliran di persimpangan', 'v.speed': '{n} km/jam',
 
   'n.weather.rain': 'Hujan turun', 'n.weather.storm': 'Badai petir datang', 'n.weather.snow': 'Salju turun',
   'n.weather.fog': 'Kabut turun di atas sungai', 'n.weather.cloudy': 'Awan mendung datang', 'n.weather.clear': 'Langit cerah kembali',
