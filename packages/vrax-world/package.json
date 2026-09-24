@@ -1,0 +1,8 @@
+{
+  "name": "vrax-world",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VRAX World: a miniature city sandbox. Change one thing and watch the whole city react.",
+  "type": "module",
+  "license": "MIT"
+}

@@ -19,6 +19,15 @@ describe("products catalog", () => {
     assert.equal(catalog.products.length, PRODUCTS.length);
   });
 
+  it("includes VRAX World as a runnable product", () => {
+    const world = PRODUCTS.find((p) => p.id === "vrax-world");
+    assert.ok(world);
+    assert.equal(world.kind, "product");
+    assert.equal(world.command, "inz world");
+    assert.match(world.url, /packages\/vrax-world/);
+    assert.equal(listProducts().summary.flagship, "vraxtal-vault");
+  });
+
   it("filters by kind", () => {
     const onlyProducts = listProducts({ kind: "product" });
     assert.ok(onlyProducts.products.every((p) => p.kind === "product"));

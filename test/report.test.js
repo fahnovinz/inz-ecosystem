@@ -129,4 +129,29 @@ describe("report printers", () => {
     assert.match(out, /Developer tools/);
     assert.match(out, /inz stats/);
   });
+
+  it("printProductsReport lists other products with their command", () => {
+    const out = capture(() =>
+      printProductsReport({
+        homepage: "https://github.com/fahnovinz/inz-ecosystem",
+        version: "0.3.2",
+        summary: { products: 1, tools: 0 },
+        products: [
+          {
+            kind: "product",
+            name: "VRAX World",
+            status: "new",
+            tagline: "city sandbox",
+            url: "https://github.com/fahnovinz/inz-ecosystem/tree/main/packages/vrax-world",
+            command: "inz world",
+          },
+        ],
+      })
+    );
+
+    assert.doesNotMatch(out, /Flagship product/);
+    assert.match(out, /Products/);
+    assert.match(out, /◆ VRAX World {2}\[new\]/);
+    assert.match(out, /\$ inz world/);
+  });
 });

@@ -42,6 +42,8 @@ jobs:
           node --check src/products.js
           node --check src/report.js
           node --check src/utils.js
+          node --check src/world-server.js
+          for f in $(find packages/vrax-world/src -name '*.js'); do node --check "$f"; done
 
       - name: Upload coverage (lcov)
         if: always()

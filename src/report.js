@@ -71,18 +71,29 @@ function printProductsReport(catalog) {
   const products = catalog.products.filter((p) => p.kind === "product");
   const tools = catalog.products.filter((p) => p.kind === "tool");
 
-  if (products.length) {
-    console.log("  Flagship product");
-    for (const p of products) {
-      console.log(`  ★ ${p.name}  [${p.status}]`);
-      console.log(`    ${p.tagline}`);
-      console.log(`    ${p.url}`);
-      if (p.stack?.length) console.log(`    Stack  ${p.stack.join(" · ")}`);
-      for (const h of p.highlights || []) {
-        console.log(`    · ${h}`);
-      }
-      console.log("");
+  const printProduct = (p, mark) => {
+    console.log(`  ${mark} ${p.name}  [${p.status}]`);
+    console.log(`    ${p.tagline}`);
+    console.log(`    ${p.url}`);
+    if (p.command) console.log(`    $ ${p.command}`);
+    if (p.stack?.length) console.log(`    Stack  ${p.stack.join(" · ")}`);
+    for (const h of p.highlights || []) {
+      console.log(`    · ${h}`);
     }
+    console.log("");
+  };
+
+  const flagship = products.filter((p) => p.status === "flagship");
+  const others = products.filter((p) => p.status !== "flagship");
+
+  if (flagship.length) {
+    console.log("  Flagship product");
+    for (const p of flagship) printProduct(p, "★");
+  }
+
+  if (others.length) {
+    console.log("  Products");
+    for (const p of others) printProduct(p, "◆");
   }
 
   if (tools.length) {

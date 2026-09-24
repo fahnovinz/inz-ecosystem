@@ -1,0 +1,133 @@
+# VRAX World
+
+**Change one thing. Watch the whole city react.**
+
+VRAX World is a miniature city sandbox that runs in the browser. People, traffic, weather, the river and light share one simulation, so a single change ripples through everything: close a bridge and traffic queues at the barrier, make it rain and umbrellas go up while the streets empty, set the school on fire and the fire trucks race over whichever bridge is still open.
+
+You change the city by typing, in **English or Bahasa Indonesia**. A rule-based interpreter reads the command locally: no AI model, no network calls.
+
+![VRAX World by day, with a festival in Taman Vrax](docs/vrax-world-day.jpg)
+
+![VRAX World at night: rain, a fire at the school and VRAX Tower lit up](docs/vrax-world-night.jpg)
+
+## Run it
+
+From the repository root (Node.js 18+, no install needed):
+
+```bash
+npm run world              # or: node bin/inz.js world
+# → http://127.0.0.1:5173/
+```
+
+Options: `--port 8080`, and `--host 0.0.0.0` to open it on your phone over the local network.
+
+Any static file server works too, because there is no build step:
+
+```bash
+cd packages/vrax-world
+python3 -m http.server 5173
+```
+
+The page loads three.js from jsDelivr, so the first visit needs an internet connection.
+
+## Things to try
+
+| English | Bahasa Indonesia |
+|---------|------------------|
+| Make it rain | Bikin hujan dong |
+| Close the north bridge | Tutup jembatan utara |
+| Reopen it | Buka lagi |
+| Raise the river by 50 cm | Naikkan sungai setengah meter |
+| Flood the city | Banjirkan kota |
+| Rob the bank | Rampok bank |
+| Set the school on fire | Bakar sekolah |
+| Put out the fire | Padamkan api |
+| Start a festival | Mulai festival / Pasar malam |
+| Turn the parking into a park | Ubah parkiran jadi taman |
+| Make it night and blackout | Jadikan malam dan mati lampu |
+| At 8 pm | Jam 8 malam |
+| Make it snow | Bikin salju |
+| Rush hour | Bikin macet |
+| Light up the tower | Nyalakan menara |
+
+The interpreter understands paraphrases, place names, amounts (`50 cm`, `setengah meter`), clock times, “this/ini” for the place you clicked, “it/itu” for the last thing you changed, and several changes joined with “and/dan”. When a command is ambiguous (“close the bridge”) it asks which one. When something is outside the sandbox (“earthquake”) it says so and suggests what it can do.
+
+## What reacts to what
+
+| Change | What follows |
+|--------|--------------|
+| Close a bridge | Drivers reroute over the other bridge; if both are shut, some queue at the barrier, wait, then U-turn. Pedestrians lose the crossing too. |
+| Rain / storm | People without umbrellas duck into the nearest building, umbrellas open, traffic slows, roads turn glossy, fires burn down faster. |
+| River level | Above +60 cm boats can no longer pass under the bridges. At +1.8 m the park, parking, pier and warung flood. At +2.2 m the riverside roads and bridge approaches close. Below −70 cm boats run aground. |
+| Fire | Everyone inside evacuates, onlookers gather, two fire trucks leave the Fire Station on the east bank. If the bridges are closed they cannot get through, and a fire left alone can jump to the next building. |
+| Bank robbery | Robbers run for the getaway car, which heads for an exit across the river. Police leave the station on the west bank and a patrol comes in from the exit. Closing bridges mid-chase changes the ending. |
+| Festival | Crowds head to the pendopo in Taman Vrax, traffic slows along the park, and at night the sky fills with fireworks. |
+| Blackout | Windows and street lamps go dark, people come out with phone torches, and only VRAX Tower stays lit on backup power. |
+| Time of day / season | Sun, shadows, window lights and street lamps follow the clock. Winter covers roofs and parks in snow; autumn turns the trees. |
+
+Traffic keeps left, as in Indonesia. Motorbikes, taxis and the TransVrax bus loop share the roads.
+
+## Controls
+
+- **Click** a person, vehicle, building or place name to see what it is doing and what you can do with it.
+- **Drag** to pan, **scroll** or **pinch** to zoom, **right-drag** or **two-finger twist** to turn.
+- **City settings** hold weather, river level, time of day, season and the day cycle.
+- **Undo** restores the whole city, including randomness, to the moment before your last change.
+- **Play showcase** runs a 40-second guided tour and puts everything back afterwards.
+- Keyboard: `Space` pause, `Z` undo, `C` cinema mode, `/` type a command, `↑ ↓` command history, `?` help, `Esc` close.
+
+## How it is built
+
+Plain ES modules with no build step. Everything except three.js is written from scratch.
+
+```text
+packages/vrax-world/
+├── index.html, style.css
+└── src/
+    ├── main.js            app wiring: state, undo, showcase, main loop
+    ├── interpreter.js     EN/ID rule-based command parser (pure)
+    ├── i18n.js            interface text in English and Bahasa Indonesia
+    ├── world/layout.js    blocks, roads, river, buildings, landmarks
+    ├── world/world.js     derived world: doors, pedestrian grid, road graph
+    ├── sim/               simulation (no three.js, runs in Node)
+    │   ├── nav.js         1 m walk grid, A*, line-of-sight smoothing
+    │   ├── roads.js       road graph, Dijkstra, left-hand lane polylines
+    │   ├── people.js      residents, plans, outdoor targets, shelter
+    │   ├── vehicles.js    traffic, junction claims, closures, buses
+    │   ├── events.js      fire, robbery, festival crowds, boats
+    │   ├── actions.js     applies one command, reports what changed
+    │   └── state.js, step.js, rng.js, common.js
+    ├── render/            three.js scene, city meshes, agents, effects, camera
+    └── ui/                DOM interface and the sentences it shows
+```
+
+- **State is plain data.** The whole city, including the seeded RNG, fits in one object, so `structuredClone` gives an exact snapshot for undo and the showcase.
+- **The simulation runs without a browser.** `test/vrax-world.test.js` builds the world in Node, runs the clock, closes bridges, starts fires and checks the outcomes.
+- **Rendering reads state every frame.** Instanced meshes for people and vehicles, merged geometry for the city, and a small shader patch that adds snow on upward faces and a wet look on roads.
+
+## Tests
+
+```bash
+npm test                          # whole repository
+node --test test/vrax-world.test.js
+```
+
+## Deploy
+
+It is a static folder. For Cloudflare Pages:
+
+```bash
+npx wrangler pages deploy packages/vrax-world --project-name vrax-world
+```
+
+GitHub Pages, Netlify or any static host works the same way.
+
+## Ringkasan (Bahasa Indonesia)
+
+VRAX World adalah kota mini di browser. Warga, lalu lintas, cuaca, sungai dan cahaya berbagi satu simulasi, jadi satu perubahan kecil merambat ke mana-mana. Ketik perintah dalam Bahasa Indonesia atau Inggris, misalnya “tutup jembatan utara”, “bikin hujan”, “rampok bank” atau “jam 8 malam dan mati lampu”. Semua perintah diproses lokal oleh penerjemah berbasis aturan, tanpa model AI dan tanpa internet. Jalankan dengan `npm run world` dari root repo, lalu buka `http://127.0.0.1:5173/`.
+
+## Credits
+
+Inspired by the [Small World](https://small-world.dominikmartn.workers.dev/) sandbox. VRAX World is an independent implementation: its city, simulation, interpreter and code are its own.
+
+Part of the [INZ Ecosystem](../../README.md) by [@fahnovinz](https://github.com/fahnovinz). MIT licensed.

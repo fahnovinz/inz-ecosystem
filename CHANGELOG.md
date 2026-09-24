@@ -4,6 +4,14 @@ All notable changes to INZ Ecosystem are documented here.
 
 ## [Unreleased]
 
+### Added
+- **VRAX World** (`packages/vrax-world`): a miniature 3D city sandbox. People, traffic, weather, the river and light share one simulation; commands in English or Bahasa Indonesia are parsed locally by a rule-based interpreter
+- Bridges, river level and flooding, fires with fire trucks, a bank robbery and police chase, festivals with fireworks, blackouts, rush hour, parking-to-park, seasons and a day cycle
+- Whole-world undo from state snapshots, a guided showcase, landmark labels, an inspector for people, vehicles and buildings, and an EN/ID interface
+- `inz world` command and `npm run world` (zero-dependency static server bound to 127.0.0.1, `src/world-server.js`)
+- VRAX World in the product catalog; `inz products` now lists non-flagship products under “Products”
+- Tests: interpreter (EN/ID), headless simulation scenarios, static server
+
 ## [0.3.2] — 2026-07-31
 
 ### Added
