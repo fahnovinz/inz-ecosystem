@@ -7,7 +7,7 @@ const root = path.join(__dirname, "..", "packages", "vrax-world", "src");
 const load = (rel) => import(pathToFileURL(path.join(root, rel)).href);
 
 let interpret;
-let buildWorld, createState, step, applyAction, outdoorCount, waitingCount, unreachableCount;
+let buildWorld, createState, step, applyAction, outdoorCount, waitingCount, unreachableCount, moodFor;
 
 before(async () => {
   ({ interpret } = await load("interpreter.js"));
@@ -17,6 +17,7 @@ before(async () => {
   ({ applyAction } = await load("sim/actions.js"));
   ({ outdoorCount } = await load("sim/people.js"));
   ({ waitingCount, unreachableCount } = await load("sim/vehicles.js"));
+  ({ moodFor } = await load("audio/music.js"));
 });
 
 const acts = (text, ctx) => interpret(text, ctx).actions;
@@ -74,6 +75,31 @@ describe("vrax-world interpreter (English)", () => {
   });
 });
 
+describe("vrax-world interpreter (sound)", () => {
+  it("switches music and sound in English", () => {
+    assert.deepEqual(acts("play some music"), [{ type: "sound", value: "musicOn" }]);
+    assert.deepEqual(acts("stop the music"), [{ type: "sound", value: "musicOff" }]);
+    assert.deepEqual(acts("mute"), [{ type: "sound", value: "off" }]);
+    assert.deepEqual(acts("unmute"), [{ type: "sound", value: "on" }]);
+    assert.deepEqual(acts("turn it up"), [{ type: "sound", value: "up" }]);
+    assert.deepEqual(acts("turn the music down"), [{ type: "sound", value: "down" }]);
+    // A concert is still a festival, and "stop" still pauses.
+    assert.deepEqual(acts("start a concert"), [{ type: "festival", on: true }]);
+    assert.deepEqual(acts("stop"), [{ type: "pause", value: true }]);
+  });
+
+  it("switches music and sound in Indonesian", () => {
+    assert.deepEqual(acts("nyalakan musik"), [{ type: "sound", value: "musicOn" }]);
+    assert.deepEqual(acts("musik dong"), [{ type: "sound", value: "musicOn" }]);
+    assert.deepEqual(acts("matikan musik"), [{ type: "sound", value: "musicOff" }]);
+    assert.deepEqual(acts("matikan suara"), [{ type: "sound", value: "off" }]);
+    assert.deepEqual(acts("keraskan musik"), [{ type: "sound", value: "up" }]);
+    assert.deepEqual(acts("kecilkan volume"), [{ type: "sound", value: "down" }]);
+    assert.deepEqual(acts("bikin konser musik"), [{ type: "festival", on: true }]);
+    assert.deepEqual(acts("matikan lampu"), [{ type: "blackout", on: true }]);
+  });
+});
+
 describe("vrax-world interpreter (Bahasa Indonesia)", () => {
   it("understands everyday Indonesian", () => {
     assert.deepEqual(acts("bikin hujan dong"), [{ type: "weather", value: "rain" }]);
@@ -121,6 +147,22 @@ describe("vrax-world simulation", () => {
     assert.ok(state.people.length > 200);
     assert.ok(state.vehicles.length > 20);
     assert.ok(outdoorCount(state) > 50);
+  });
+
+  it("picks the soundtrack mood from the city", () => {
+    const s = createState(world, 3);
+    assert.equal(moodFor(s), "day");
+    applyAction(s, world, { type: "rush", on: true });
+    assert.equal(moodFor(s), "rush");
+    applyAction(s, world, { type: "weather", value: "rain" });
+    assert.equal(moodFor(s), "rain");
+    applyAction(s, world, { type: "festival", on: true });
+    assert.equal(moodFor(s), "festival");
+    applyAction(s, world, { type: "fire", target: "school" });
+    assert.equal(moodFor(s), "tense");
+    const n = createState(world, 3);
+    applyAction(n, world, { type: "time", value: "night" });
+    assert.equal(moodFor(n), "night");
   });
 
   it("keeps everyday traffic moving (no gridlock)", () => {

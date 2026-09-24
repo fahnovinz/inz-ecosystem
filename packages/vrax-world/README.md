@@ -51,6 +51,7 @@ The page loads three.js from jsDelivr, so the first visit needs an internet conn
 | Make it snow | Bikin salju |
 | Rush hour | Bikin macet |
 | Light up the tower | Nyalakan menara |
+| Play some music / Mute | Nyalakan musik / Matikan suara |
 
 The interpreter understands paraphrases, place names, amounts (`50 cm`, `setengah meter`), clock times, “this/ini” for the place you clicked, “it/itu” for the last thing you changed, and several changes joined with “and/dan”. When a command is ambiguous (“close the bridge”) it asks which one. When something is outside the sandbox (“earthquake”) it says so and suggests what it can do.
 
@@ -67,9 +68,17 @@ The interpreter understands paraphrases, place names, amounts (`50 cm`, `setenga
 | Blackout | Windows and street lamps go dark, people come out with phone torches, and only VRAX Tower stays lit on backup power. |
 | Time of day / season | Sun, shadows, window lights and street lamps follow the clock. Winter covers roofs and parks in snow; autumn turns the trees. |
 
-Traffic keeps left, as in Indonesia. Streets are built to real proportions: two 3.5 m lanes each way, 3 m sidewalks and wide corner turns. Motorbikes and the TransVrax bus keep to the kerb lane, cars and taxis pick either lane, turns that don't cross go through a junction together, and nobody enters a junction when the road beyond it is backed up. Nobody drives through anybody: drivers keep their distance along their own path, even mid-turn, wait behind the zebra at a junction, and stop for people on it; people wait at the kerb for a car that is close, and let a driver through who has been waiting.
+Traffic keeps left, as in Indonesia. Streets are built to real proportions: two 3.5 m lanes each way, 3 m sidewalks and wide corner turns. Motorbikes and the TransVrax bus keep to the kerb lane, cars and taxis pick either lane, turns that don't cross go through a junction together, and nobody enters a junction when the road beyond it is backed up. Nobody drives through anybody: drivers keep their distance along their own path, even mid-turn, wait behind the zebra at a junction, and stop for people on it; people wait at the kerb for a car that is close, and let a driver through who has been waiting. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
 
-Riverside Parking has two rows of stalls either side of a two-way aisle, with its driveway as the fourth arm of the junction on the riverside road. Cars drive in nose first and back out before leaving; people walk around the lot on the sidewalk and cross the driveway on a zebra. Turned into a garden, it opens once the last car has gone. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
+Riverside Parking has two rows of stalls either side of a two-way aisle, with its driveway as the fourth arm of the junction on the riverside road. Cars drive in nose first and back out before leaving; people walk around the lot on the sidewalk and cross the driveway on a zebra. Turned into a garden, it opens once the last car has gone.
+
+## Sound
+
+The soundtrack is written live in the browser and follows the city. A sunny day gets lo-fi keys and a kalimba, rush hour a busier groove, the evening a warmer lo-fi, the night brushed jazz with a bamboo flute, rain soft piano, snow a music box. A festival switches to gamelan in slendro tuning: saron on the beat, bonang interlocking above, kendang, kenong and a big gong closing each sixteen-beat cycle. A fire or a police chase turns it tense; a blackout leaves a few plucked notes by candlelight; the tower light show brings synthwave.
+
+The city has its own sounds under the music: traffic that swells as the camera comes closer, horns from drivers stuck too long, police and fire-engine sirens that pan with the vehicle, birds and turtle doves by day, crickets at night, frogs on rainy nights, rain, wind, thunder after each lightning strike, crackling fires, fireworks that boom a moment after the flash, and the festival crowd.
+
+Nothing is loaded from files: every note and noise is synthesised with the Web Audio API. Browsers only allow sound after a tap or key press, so it starts on your first touch. The speaker button or `M` switches it off, and City settings hold the music switch and the music and city volumes. Commands work too: “play some music”, “stop the music”, “mute”, “louder” / “nyalakan musik”, “matikan musik”, “matikan suara”, “keraskan musik”.
 
 ## Controls
 
@@ -77,10 +86,11 @@ Riverside Parking has two rows of stalls either side of a two-way aisle, with it
 - **Phone:** drag to move, pinch to zoom, twist two fingers to turn, drag two fingers up or down to tilt, double-tap to zoom in. Gestures also work when a finger lands on a place label.
 - **Mouse:** drag to move, scroll to zoom at the cursor, right-drag (or Shift-drag) to turn and tilt.
 - **Buttons** under Reset view zoom and turn the camera; hold them to keep going.
-- **City settings** hold weather, river level, time of day, season and the day cycle.
+- **City settings** hold weather, river level, time of day, season and the day cycle, plus the music switch and the music and city volumes.
+- **Speaker button** switches all sound on or off.
 - **Undo** restores the whole city, including randomness, to the moment before your last change.
 - **Play showcase** runs a 40-second guided tour and puts everything back afterwards.
-- Keyboard: `Space` pause, `Z` undo, `C` cinema mode, `/` type a command, `↑ ↓` command history, `+ −` zoom, `[ ]` turn, `0` reset view, `?` help, `Esc` close.
+- Keyboard: `Space` pause, `Z` undo, `C` cinema mode, `M` sound on/off, `/` type a command, `↑ ↓` command history, `+ −` zoom, `[ ]` turn, `0` reset view, `?` help, `Esc` close.
 
 ## How it is built
 
@@ -104,11 +114,17 @@ packages/vrax-world/
     │   ├── actions.js     applies one command, reports what changed
     │   └── state.js, step.js, rng.js, common.js
     ├── render/            three.js scene, city meshes, people, vehicles, effects, camera
+    ├── audio/             sound, synthesised live with Web Audio (no audio files)
+    │   ├── engine.js      mixer, reverb, noise and the instruments
+    │   ├── music.js       moods, chords, grooves, the tune writer and the gamelan cycle
+    │   ├── city.js        ambience and effects that follow the simulation
+    │   └── sound.js       switches, volumes, first-tap start
     └── ui/                DOM interface and the sentences it shows
 ```
 
 - **State is plain data.** The whole city, including the seeded RNG, fits in one object, so `structuredClone` gives an exact snapshot for undo and the showcase.
 - **The simulation runs without a browser.** `test/vrax-world.test.js` builds the world in Node, runs the clock, closes bridges, starts fires and checks the outcomes.
+- **Sound reads state every frame too.** The mood comes from the city (`moodFor`), changes land on the next bar, and city sounds are placed left or right of the camera and get louder as it comes closer.
 - **Rendering reads state every frame.** Merged geometry for the city, instanced vehicles, and a small shader patch that adds snow on upward faces and a wet look on roads.
 - **One draw call for the whole crowd.** Every resident is an instance of a single low-poly figure; a vertex shader swings the arms and legs and picks the clothes, skin, hair or hijab colours per instance.
 
@@ -131,7 +147,7 @@ GitHub Pages, Netlify or any static host works the same way.
 
 ## Ringkasan (Bahasa Indonesia)
 
-VRAX World adalah kota mini di browser. Warga, lalu lintas, cuaca, sungai dan cahaya berbagi satu simulasi, jadi satu perubahan kecil merambat ke mana-mana. Ketik perintah dalam Bahasa Indonesia atau Inggris, misalnya “tutup jembatan utara”, “bikin hujan”, “rampok bank” atau “jam 8 malam dan mati lampu”. Semua perintah diproses lokal oleh penerjemah berbasis aturan, tanpa model AI dan tanpa internet. Jalankan dengan `npm run world` dari root repo, lalu buka `http://127.0.0.1:5173/`.
+VRAX World adalah kota mini di browser. Warga, lalu lintas, cuaca, sungai dan cahaya berbagi satu simulasi, jadi satu perubahan kecil merambat ke mana-mana. Ketik perintah dalam Bahasa Indonesia atau Inggris, misalnya “tutup jembatan utara”, “bikin hujan”, “rampok bank” atau “jam 8 malam dan mati lampu”. Semua perintah diproses lokal oleh penerjemah berbasis aturan, tanpa model AI dan tanpa internet. Musiknya dibuat langsung di browser dan mengikuti suasana kota: lo-fi saat siang, jazz di malam hari, piano saat hujan, gamelan saat festival, tegang saat kebakaran. Suara kota (lalu lintas, klakson, sirene, burung, jangkrik, hujan, petir, kembang api) makin terdengar saat kamera mendekat; tombol speaker atau `M` untuk mematikannya. Jalankan dengan `npm run world` dari root repo, lalu buka `http://127.0.0.1:5173/`.
 
 ## Credits
 

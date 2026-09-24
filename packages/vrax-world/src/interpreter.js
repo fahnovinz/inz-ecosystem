@@ -10,11 +10,13 @@ const ID_MARKERS = new Set(('bikin buat jadikan jadi tolong dong ya yang ke di d
   'jembatan naikkan turunkan kebakaran bakar rampok taman pasar musim salju badai mendung cerah lampu mati macet ubah ' +
   'hentikan mulai kembali kembalikan semua kedua utara selatan sekolah gudang menara api air banjir padamkan panggil polisi ' +
   'pesta jam pukul lebih cepat lambat jeda lanjut batal ulang sekarang aja kota gerimis senja petang subuh kabut petir ' +
-  'lalu terus nyalakan matikan listrik parkiran parkir tempat supaya biar agar deh sih nih kah kok gimana coba')
+  'lalu terus nyalakan matikan listrik parkiran parkir tempat supaya biar agar deh sih nih kah kok gimana coba musik suara ' +
+  'keraskan kecilkan putar')
   .split(' '));
 const EN_MARKERS = new Set(('make it the please turn start stop close open reopen raise lower rain night morning bridge river fire ' +
   'rob bank set on of to into and snow storm festival park parking back end put out weather time season power lights ' +
-  'traffic fireworks tower let lets now go start show evening noon sunny cloudy foggy both north south').split(' '));
+  'traffic fireworks tower let lets now go start show evening noon sunny cloudy foggy both north south music sound mute ' +
+  'louder quieter play').split(' '));
 
 export function normalize(input) {
   return String(input || '')
@@ -65,6 +67,20 @@ const W = {
   showcase: ['play showcase', 'play the showcase', 'showcase', 'show me around', 'give me a tour', 'tour', 'demo', 'tur', 'pamerkan', 'keliling kota', 'jalan jalan'],
   timeLock: ['freeze time', 'stop time', 'stop the clock', 'pause the clock', 'lock the time', 'lock time', 'keep it like this', 'bekukan waktu', 'hentikan waktu', 'kunci waktu', 'waktu berhenti', 'stop waktu'],
   timeUnlock: ['let time run', 'let time pass', 'unfreeze time', 'unlock time', 'resume time', 'start the clock', 'jalankan waktu', 'lanjutkan waktu', 'waktu berjalan', 'buka kunci waktu'],
+  musicOn: ['play some music', 'play music', 'play the music', 'put on some music', 'put some music on', 'turn on the music', 'turn the music on',
+    'start the music', 'music on', 'music please', 'bring back the music', 'i want music', 'nyalakan musik', 'nyalain musik', 'hidupkan musik',
+    'putar musik', 'puter musik', 'puterin musik', 'setel musik', 'pasang musik', 'mainkan musik', 'musik on', 'musik nyala', 'kasih musik',
+    'musiknya nyalain', 'mau musik', 'musik dong', 'minta musik', 'bunyikan musik'],
+  musicOff: ['stop the music', 'turn off the music', 'turn the music off', 'music off', 'no music', 'mute the music', 'kill the music',
+    'matikan musik', 'matiin musik', 'hentikan musik', 'stop musik', 'musik off', 'musik mati', 'tanpa musik', 'gak usah musik', 'ga usah musik', 'nggak usah musik'],
+  soundOn: ['turn on the sound', 'turn the sound on', 'sound on', 'unmute', 'enable sound', 'nyalakan suara', 'nyalain suara', 'hidupkan suara',
+    'suara on', 'suara nyala', 'aktifkan suara', 'bunyikan'],
+  soundOff: ['turn off the sound', 'turn the sound off', 'sound off', 'mute', 'silence', 'be quiet', 'quiet please', 'matikan suara', 'matiin suara',
+    'suara off', 'suara mati', 'bisukan', 'senyap', 'heningkan', 'diam'],
+  louder: ['louder', 'turn it up', 'turn up the music', 'turn the music up', 'volume up', 'more volume', 'keraskan', 'kerasin', 'lebih keras',
+    'besarkan volume', 'gedein', 'naikkan volume', 'volume naik', 'kencengin'],
+  quieter: ['quieter', 'softer', 'turn it down', 'turn down the music', 'turn the music down', 'volume down', 'less volume', 'kecilkan', 'kecilin',
+    'pelankan', 'lebih pelan', 'turunkan volume', 'volume turun', 'pelanin'],
   pause: ['pause', 'hold on', 'freeze', 'jeda', 'pause dulu', 'berhenti sebentar', 'stop sebentar', 'stop', 'berhenti'],
   resume: ['resume', 'unpause', 'continue', 'play', 'lanjut', 'lanjutkan', 'jalan lagi', 'jalankan lagi'],
   faster: ['faster', 'speed up', 'speed it up', 'fast forward the simulation', 'percepat', 'lebih cepat', 'cepetin', 'ngebut'],
@@ -227,6 +243,15 @@ function parseClause(raw, ctx, carry) {
   if (!has(c, W.river) && !has(c, W.flood) && take(c, W.reset)) { act({ type: 'reset' }); return out; }
   if (take(c, W.showcase)) { act({ type: 'showcase' }); return out; }
   if (take(c, W.help)) { act({ type: 'help' }); return out; }
+
+  // Sound. "Louder" and "quieter" only when the clause is about sound, or is just that word.
+  if (take(c, W.musicOff)) { act({ type: 'sound', value: 'musicOff' }); return out; }
+  if (take(c, W.soundOn)) { act({ type: 'sound', value: 'on' }); return out; }
+  if (take(c, W.soundOff)) { act({ type: 'sound', value: 'off' }); return out; }
+  if (take(c, W.musicOn) || /^ (music|musik|musiknya)( dong| please| pls| lah)? $/.test(c.text)) { act({ type: 'sound', value: 'musicOn' }); return out; }
+  const aboutSound = /\s(music|musik|musiknya|volume|sound|suara|suaranya)\s/.test(c.text) || c.text.trim().split(' ').length <= 3;
+  if (aboutSound && take(c, W.louder)) { act({ type: 'sound', value: 'up' }); return out; }
+  if (aboutSound && take(c, W.quieter)) { act({ type: 'sound', value: 'down' }); return out; }
   if (take(c, W.timeLock)) { act({ type: 'timeLock', value: true }); return out; }
   if (take(c, W.timeUnlock)) { act({ type: 'timeLock', value: false }); return out; }
   const speed = c.text.match(/\s(1|2|4)\s?(?:x|kali)\s/);

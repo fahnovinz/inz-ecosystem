@@ -7,12 +7,14 @@ import { applyAction, changesWorld } from './sim/actions.js';
 import { interpret } from './interpreter.js';
 import { setLang, getLang, t } from './i18n.js';
 import { createUI } from './ui/ui.js';
+import { createSound } from './audio/sound.js';
 
 const SEED = 20260924;
 const LANG_KEY = 'vraxworld.lang';
 
 const world = buildWorld();
 let state = createState(world, SEED);
+const sound = createSound();
 const undoStack = [];
 let paused = false;
 let speed = 1;
@@ -77,6 +79,18 @@ function uiAction(a, notices) {
   else if (a.type === 'help') document.querySelector('[data-act="help"]').click();
   else if (a.type === 'pause') { paused = a.value; }
   else if (a.type === 'speed') speed = a.value === 'up' ? (speed >= 4 ? 4 : speed * 2) : a.value;
+  else if (a.type === 'sound') soundAction(a.value, notices);
+}
+
+function soundAction(value, notices) {
+  if (!sound.supported()) { notices.push({ kind: 'ui', key: 'n.sound.unsupported' }); return; }
+  if (value === 'on') sound.setOn(true);
+  else if (value === 'off') sound.setOn(false);
+  else if (value === 'musicOn') sound.setMusic(true);
+  else if (value === 'musicOff') sound.setMusic(false);
+  else sound.nudge(value === 'up' ? 0.15 : -0.15);
+  const key = { on: 'n.sound.on', off: 'n.sound.off', musicOn: 'n.music.on', musicOff: 'n.music.off', up: 'n.volume.up', down: 'n.volume.down' }[value];
+  notices.push({ kind: 'sound', key, playing: () => (sound.musicOn() ? sound.mood() : null) });
 }
 
 function run(text) {
@@ -215,6 +229,7 @@ const app = {
   togglePause: () => { paused = !paused; },
   setSpeed: (n) => { speed = n; },
   setLang: changeLang,
+  sound,
   canvas: () => (renderer ? renderer.canvas : null),
   cameraStep: (kind) => {
     if (!renderer) return;
@@ -239,6 +254,8 @@ const emit = (e) => events.push(e);
 try {
   const { createRenderer } = await import('./render/scene.js');
   renderer = createRenderer(ui.stage, world, { onPick, onSky: ui.setSky });
+  renderer.fx.hooks.strike = () => sound.thunder();
+  renderer.fx.hooks.burst = (x, y, z) => sound.burst(x, y, z);
   ui.applyLang();
   ui.booted();
 } catch (err) {
@@ -266,6 +283,8 @@ if (renderer) {
       if (!showcase) ui.showEvent(e);
     }
     renderer.render(state, dt, animTime, selection, paused);
+    const cam = renderer.rig.cur;
+    sound.update(state, world, { x: cam.x, z: cam.z, dist: cam.dist, az: cam.az });
     ui.frame(state, now);
     requestAnimationFrame(loop);
   };

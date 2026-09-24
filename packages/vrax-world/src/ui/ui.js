@@ -39,6 +39,8 @@ const I = {
   turnLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 3.5v5h5"/></svg>',
   turnRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7L20 8.5"/><path d="M20 3.5v5h-5"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.3 6.3a8 8 0 0 1 0 11.4"/></svg>',
+  soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></svg>',
 };
 const W_ICON = {
   clear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
@@ -61,6 +63,7 @@ const TRY = [
   ['help.g.seasons', ['ex.autumn', 'ex.snow', 'ex.spring']],
   ['help.g.emergency', ['ex.rob', 'ex.fireSchool', 'ex.putOut']],
   ['help.g.city', ['ex.blackout', 'ex.power', 'ex.rush', 'ex.lightshow']],
+  ['help.g.sound', ['ex.musicOn', 'ex.musicOff', 'ex.louder']],
 ];
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -79,6 +82,13 @@ function settingsHTML(p) {
     <div class="field"><span class="field-label" data-i18n="set.season"></span>${seg('season', ['spring', 'summer', 'autumn', 'winter'], 's')}</div>
     <div class="field"><span class="field-label" data-i18n="set.clock"></span>
       <div class="seg" role="radiogroup" data-seg="clock"><button type="button" class="seg-opt" role="radio" aria-checked="true" data-value="run" data-i18n="set.clockRun"></button><button type="button" class="seg-opt" role="radio" aria-checked="false" data-value="freeze" data-i18n="set.clockFreeze"></button></div>
+    </div>
+    <div class="field field-sound"><span class="field-label" data-i18n="set.music"></span>
+      <div class="seg" role="radiogroup" data-seg="music"><button type="button" class="seg-opt" role="radio" aria-checked="true" data-value="on" data-i18n="set.musicOn"></button><button type="button" class="seg-opt" role="radio" aria-checked="false" data-value="off" data-i18n="set.musicOff"></button></div>
+    </div>
+    <div class="field-pair">
+      <div class="field"><label class="field-label" for="${p}-music" data-i18n="set.musicVol"></label><input id="${p}-music" class="range" type="range" min="0" max="1" step="0.05" value="0.7" data-vol="music" /></div>
+      <div class="field"><label class="field-label" for="${p}-city" data-i18n="set.cityVol"></label><input id="${p}-city" class="range" type="range" min="0" max="1" step="0.05" value="0.8" data-vol="city" /></div>
     </div>
   </div>`;
 }
@@ -106,6 +116,7 @@ function template() {
       </div>
       <button type="button" class="btn btn-primary btn-text hide-sm tip-wide" data-act="showcase" data-i18n-tip="ui.showcaseTip"></button>
       <button type="button" class="btn btn-ghost btn-icon hide-md" data-act="cinema" data-i18n-tip="ui.cinema" data-i18n-label="ui.cinema">${I.cinema}</button>
+      <button type="button" class="btn btn-ghost btn-icon" data-act="sound"></button>
       <button type="button" class="btn btn-ghost btn-lang" data-act="lang" data-i18n-tip="ui.lang"></button>
       <button type="button" class="btn btn-ghost btn-icon tip-end" data-act="help" data-i18n-tip="ui.help" data-i18n-label="ui.help">${I.help}</button>
       <button type="button" class="btn btn-ghost btn-icon show-sm" data-act="sheet" data-i18n-label="ui.settings">${I.menu}</button>
@@ -197,6 +208,13 @@ export function createUI(root, app) {
     $('[data-act="undo"]').disabled = !app.canUndo();
     const sc = $('[data-act="showcase"]');
     sc.innerHTML = app.showcaseRunning() ? `${I.stop}<span>${esc(t('ui.stopShowcase'))}</span>` : `${I.showcase}<span>${esc(t('ui.showcase'))}</span>`;
+    const snd = $('[data-act="sound"]');
+    const sOn = app.sound.on() && app.sound.supported();
+    snd.innerHTML = sOn ? I.soundOn : I.soundOff;
+    snd.classList.toggle('is-waiting', sOn && app.sound.waiting());
+    snd.dataset.tip = t(!sOn ? 'ui.soundOff' : app.sound.waiting() ? 'ui.soundWaiting' : 'ui.soundOn');
+    snd.setAttribute('aria-label', snd.dataset.tip);
+    snd.setAttribute('aria-pressed', String(sOn));
     const sheetUndo = sheetRoot.querySelector('[data-act="undo"]');
     if (sheetUndo) sheetUndo.disabled = !app.canUndo();
     for (const b of sheetRoot.querySelectorAll('[data-speed]')) b.setAttribute('aria-checked', String(Number(b.dataset.speed) === app.speed()));
@@ -205,7 +223,7 @@ export function createUI(root, app) {
   function syncSettings(scope) {
     if (!scope) return;
     const s = app.state();
-    const vals = { weather: s.weather, time: periodOf(s.clock), season: s.season, clock: s.timeLocked ? 'freeze' : 'run' };
+    const vals = { weather: s.weather, time: periodOf(s.clock), season: s.season, clock: s.timeLocked ? 'freeze' : 'run', music: app.sound.musicOn() ? 'on' : 'off' };
     for (const g of scope.querySelectorAll('[data-seg]')) {
       for (const b of g.querySelectorAll('.seg-opt')) b.setAttribute('aria-checked', String(b.dataset.value === vals[g.dataset.seg]));
     }
@@ -213,6 +231,7 @@ export function createUI(root, app) {
     if (r && document.activeElement !== r) r.value = String(s.river);
     const rv = scope.querySelector('[data-river-value]');
     if (rv) rv.textContent = formatLevel(Number(r ? r.value : s.river), getLang());
+    for (const v of scope.querySelectorAll('[data-vol]')) if (document.activeElement !== v) v.value = String(app.sound.volume(v.dataset.vol));
   }
 
   function wireSettings(scope) {
@@ -221,6 +240,7 @@ export function createUI(root, app) {
       if (!b) return;
       const seg = b.closest('[data-seg]').dataset.seg;
       const v = b.dataset.value;
+      if (seg === 'music') { app.sound.setMusic(v === 'on'); syncSettings(scope); return; }
       const a = seg === 'weather' ? { type: 'weather', value: v } : seg === 'time' ? { type: 'time', value: v }
         : seg === 'season' ? { type: 'season', value: v } : { type: 'timeLock', value: v === 'freeze' };
       app.apply([a]);
@@ -229,8 +249,14 @@ export function createUI(root, app) {
     const r = scope.querySelector('[data-river]');
     r.addEventListener('input', () => { scope.querySelector('[data-river-value]').textContent = formatLevel(Number(r.value), getLang()); });
     r.addEventListener('change', () => app.apply([{ type: 'river', mode: 'set', value: Number(r.value) }]));
+    for (const v of scope.querySelectorAll('[data-vol]')) v.addEventListener('input', () => app.sound.setVolume(v.dataset.vol, Number(v.value)));
   }
   wireSettings(popover);
+  app.sound.onChange(() => {
+    refreshControls();
+    syncSettings(popover);
+    if (sheetRoot.innerHTML) syncSettings(sheetRoot);
+  });
 
   function openSheet() {
     sheetRoot.innerHTML = `<div class="scrim" data-scrim></div>
@@ -291,6 +317,7 @@ export function createUI(root, app) {
     else if (act === 'showcase') app.toggleShowcase();
     else if (act === 'cinema') toggleCinema();
     else if (act === 'lang') app.setLang(getLang() === 'id' ? 'en' : 'id');
+    else if (act === 'sound') { app.sound.toggle(); refreshControls(); }
     else if (act === 'help') openHelp();
     else if (act === 'view') app.resetView();
     else if (act === 'local') openHelp('commands');
@@ -322,12 +349,14 @@ export function createUI(root, app) {
       <h3 id="help-commands">${esc(t('help.commands'))}</h3><p>${esc(t('help.commandsBody'))}</p>
       <h3>${esc(t('help.direct'))}</h3><p>${esc(t('help.directBody'))}</p>
       <h3>${esc(t('help.undo'))}</h3><p>${esc(t('help.undoBody'))}</p>
+      <h3>${esc(t('help.sound'))}</h3><p>${esc(t('help.soundBody'))}</p>
       <h3>${esc(t('help.keys'))}</h3>
       <dl class="keys">
         <div><dt><kbd>Space</kbd></dt><dd>${esc(t('key.space'))}</dd></div>
         <div><dt><kbd>Z</kbd></dt><dd>${esc(t('key.z'))}</dd></div>
         <div><dt><kbd>C</kbd></dt><dd>${esc(t('key.c'))}</dd></div>
         <div><dt><kbd>/</kbd></dt><dd>${esc(t('key.slash'))}</dd></div>
+        <div><dt><kbd>M</kbd></dt><dd>${esc(t('key.m'))}</dd></div>
         <div><dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>${esc(t('key.arrows'))}</dd></div>
         <div><dt><kbd>?</kbd></dt><dd>${esc(t('key.help'))}</dd></div>
         <div><dt><kbd>Esc</kbd></dt><dd>${esc(t('key.esc'))}</dd></div>
@@ -638,6 +667,7 @@ export function createUI(root, app) {
     if (e.key === ' ') { e.preventDefault(); app.togglePause(); refreshControls(); }
     else if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); app.undo(); }
     else if (e.key === 'c' || e.key === 'C') toggleCinema();
+    else if (e.key === 'm' || e.key === 'M') { app.sound.toggle(); refreshControls(); }
     else if (e.key === '/') { e.preventDefault(); input.focus(); }
     else if (e.key === '?') { e.preventDefault(); openHelp(); }
     else if (e.target !== app.canvas()) {

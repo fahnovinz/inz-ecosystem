@@ -288,6 +288,8 @@ export function makeFx(scene, city) {
   const c = new THREE.Color();
   const PALETTE = [0xff4d6d, 0xffd166, 0x06d6a0, 0x4cc9f0, 0xf72585, 0xb5179e, 0xfff3b0, 0x22d3ee];
   let nextBurst = 0, nextStrike = 3, flash = 0, flashT = 0;
+  // Listeners for the sound: hooks.strike() on lightning, hooks.burst(x, y, z) on fireworks.
+  const hooks = { strike: null, burst: null };
 
   function burst(x, y, z) {
     const hex = PALETTE[Math.floor(Math.random() * PALETTE.length)];
@@ -301,6 +303,7 @@ export function makeFx(scene, city) {
       sparks.emit(x, y, z, r * Math.cos(th) * sp, u * sp, r * Math.sin(th) * sp, 1.6 + Math.random() * 0.9, 1.3, c, { grav: 5, drag: 1.3 });
     }
     flash = Math.max(flash, 0.6);
+    if (hooks.burst) hooks.burst(x, y, z);
   }
 
   function update(dt, time, state, world, env, buildingTop) {
@@ -345,6 +348,7 @@ export function makeFx(scene, city) {
       boltGeo.attributes.position.needsUpdate = true;
       flashT = 0.35;
       flash = 1;
+      if (hooks.strike) hooks.strike();
     }
     if (flashT > 0) {
       flashT -= dt;
@@ -450,5 +454,5 @@ export function makeFx(scene, city) {
 
   function clearTransient() { fire.clear(); smoke.clear(); spray.clear(); }
 
-  return { update, setScale, clearTransient, burst };
+  return { update, setScale, clearTransient, burst, hooks };
 }

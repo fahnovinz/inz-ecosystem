@@ -13,6 +13,8 @@ All notable changes to INZ Ecosystem are documented here.
 - Tests: interpreter (EN/ID), headless simulation scenarios, static server
 - Residents drawn as articulated low-poly figures (walking arms and legs, hair, hijab, peci, kids) in one instanced draw call
 - Drivers stop for pedestrians on zebra crossings; the inspector says why a vehicle is waiting
+- VRAX World sound, synthesised live with Web Audio (no audio files): a generative soundtrack whose mood follows the city (sunny lo-fi, rush-hour groove, evening lo-fi, night jazz, rainy piano, snowy music box, gamelan festival in slendro, tense emergencies, candlelight blackout, light-show synthwave), and city ambience (traffic, horns, sirens, birds, crickets, frogs, rain, wind, thunder, fire, fireworks, crowds) placed around the camera and louder up close
+- Sound controls: speaker button and `M`, music switch and music/city volumes in City settings (remembered), and commands in English and Indonesian (“play some music”, “matikan suara”, “keraskan musik”)
 
 - Camera: the view follows fingers and the mouse exactly, drags keep the ground under the pointer, zoom centres on the cursor or between the fingers, two-finger tilt, double-tap zoom, and on-screen zoom and turn buttons
 - Phones and tablets render without MSAA at up to 1.5× resolution, with smaller shadow maps redrawn every other frame; resolution adapts to the measured frame rate

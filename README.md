@@ -51,7 +51,7 @@ Product card: [packages/vraxtal-vault](packages/vraxtal-vault/) · Demo (maintai
 
 ![VRAX World](packages/vrax-world/docs/vrax-world-day.jpg)
 
-A miniature 3D city where people, traffic, weather, the river and light share one simulation. Type a change in **English or Bahasa Indonesia** (“close the north bridge”, “bikin hujan”, “rampok bank”) and watch the city react: traffic reroutes, umbrellas open, fire trucks race to the scene, robbers flee across the river. Commands are parsed locally by a rule-based interpreter, with no AI model and no network calls.
+A miniature 3D city where people, traffic, weather, the river and light share one simulation. Type a change in **English or Bahasa Indonesia** (“close the north bridge”, “bikin hujan”, “rampok bank”) and watch the city react: traffic reroutes, umbrellas open, fire trucks race to the scene, robbers flee across the river. Commands are parsed locally by a rule-based interpreter, with no AI model and no network calls. A generative soundtrack and city sounds, synthesised live with Web Audio, follow what happens: lo-fi by day, jazz at night, gamelan at the festival, sirens on the way to a fire.
 
 ```bash
 npm run world        # → http://127.0.0.1:5173/

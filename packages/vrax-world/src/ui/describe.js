@@ -210,6 +210,14 @@ export function describeNotice(n, state, world) {
       out.title = t(n.key);
       out.quiet = true;
       break;
+    case 'sound':
+      out.title = t(n.key);
+      out.quiet = true;
+      out.live = () => {
+        const mood = n.playing && n.playing();
+        return mood ? [t('snd.playing', { mood: t(`mood.${mood}`) })] : [];
+      };
+      break;
     default:
       out.title = '';
   }
