@@ -17,7 +17,8 @@ export const R = { NONE: 0, BRIDGE_N: 1, BRIDGE_S: 2, STRIP: 3, RIVERROAD: 4 };
 
 export function createGrid() {
   const n = GW * GH;
-  return { w: GW, h: GH, type: new Uint8Array(n), region: new Uint8Array(n), area: new Uint8Array(n) };
+  // lot: parking-lot asphalt, closed to walkers while it is a car park.
+  return { w: GW, h: GH, type: new Uint8Array(n), region: new Uint8Array(n), area: new Uint8Array(n), lot: new Uint8Array(n) };
 }
 
 export function cellIndex(x, z) {

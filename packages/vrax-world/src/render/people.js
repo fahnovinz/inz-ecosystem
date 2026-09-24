@@ -194,14 +194,15 @@ export function makePeople(scene) {
       if (n >= MAX) break;
       let look = looks.get(p.id);
       if (!look) { look = lookFor(p); looks.set(p.id, look); }
-      const walking = p.st === 'walk';
+      const walking = p.st === 'walk' && !(p.kerb > 0);
       const running = walking && (p.kind === 'robber' || p.purp === 'evac' || (wet && !p.hasUmb));
       const phase = time * (running ? 13 : 8.2) + p.id * 1.7;
       const amp = walking ? (running ? 0.8 : 0.48) : 0;
       let x = p.x, z = p.z;
       if (walking && p.kind === 'res') {
         const c = Math.cos(p.hd), s = Math.sin(p.hd);
-        x += c * p.lat; z -= s * p.lat;
+        const off = p.off ?? 0;
+        x += c * off; z -= s * off;
       }
       const sc = SCALE * look.height;
       const bob = walking ? Math.abs(Math.sin(phase)) * 0.05 * sc : 0;

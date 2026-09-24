@@ -96,6 +96,12 @@ export function buildWorld() {
       }
     }
   }
+  // Riverside Parking: walkers keep off the stalls and the aisle and cross the
+  // driveway on a zebra, where drivers give way.
+  const lotIn = L.stripInner(L.strip('parking'));
+  // A metre of margin: walkers are drawn up to a metre either side of their path.
+  fillRect(grid.lot, lotIn.x0, L.PARKING.z0 - 1, lotIn.x1 + 1, L.PARKING.z1 + 1, 1);
+  fillRect(grid.type, L.PARKING.gateX, L.PARKING.entryZ - L.PARKING.driveHalf, L.RIVERSIDE_X - L.ROAD_HALF, L.PARKING.entryZ + L.PARKING.driveHalf, T.CROSS);
   // Mid-block crossings on the riverside roads so the park is easy to reach.
   for (const x of [-L.RIVERSIDE_X, L.RIVERSIDE_X]) {
     for (const z of MIDBLOCK_Z) {
@@ -136,7 +142,7 @@ export function buildWorld() {
 
   // ---- Road graph ------------------------------------------------------------
   const pois = buildings.map((b) => ({ id: b.id, x: b.out.x + b.nx * 3, z: b.out.z + b.nz * 3 }));
-  pois.push({ id: 'parking', x: L.RIVERSIDE_X, z: L.PARKING_ENTRY_Z });
+  pois.push({ id: 'parking', x: L.PARKING.gateX, z: L.PARKING.entryZ });
   const roads = buildRoadGraph(pois);
 
   // ---- Spots: where people stand around -------------------------------------
@@ -161,8 +167,12 @@ export function buildWorld() {
 
   // ---- Parking stalls ----------------------------------------------------------
   const parkingSpots = [];
-  for (let z = L.PARKING.z0; z <= L.PARKING.z1; z += 2.9) {
-    if (Math.abs(z - L.PARKING.entryZ) < 2.4) continue;
+  // Stalls 2.8 m wide, clear of the driveway where it meets the aisle.
+  const pitch = L.PARKING.pitch;
+  const reach = Math.floor((L.PARKING.z1 - L.PARKING.entryZ - pitch / 2) / pitch);
+  for (let k = -reach; k <= reach; k++) {
+    const z = L.PARKING.entryZ + k * pitch;
+    if (Math.abs(z - L.PARKING.entryZ) < L.PARKING.driveHalf + 2) continue;
     parkingSpots.push({ x: L.PARKING.rows[0], z, side: -1 });
     parkingSpots.push({ x: L.PARKING.rows[1], z, side: 1 });
   }

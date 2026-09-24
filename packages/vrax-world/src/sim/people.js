@@ -2,8 +2,8 @@
 
 import { rand, range, pick, weighted, chance } from './rng.js';
 import { NAMES, PENDOPO } from '../world/layout.js';
-import { cellIndex } from './nav.js';
-import { hourOf, isWet, pedBlocked, burning } from './common.js';
+import { cellIndex, T } from './nav.js';
+import { hourOf, isWet, pedBlocked, burning, gardenOpen } from './common.js';
 
 const CLOTHES = [0xe4572e, 0x2e86ab, 0xf2c14e, 0x76b041, 0x9b5de5, 0xf15bb5, 0x00a6d6, 0xf4d35e, 0x3a3a3a, 0xf7f7f2, 0xd35d6e, 0x5aa9e6, 0x7fc8a9, 0xe07a5f, 0x1f4e79, 0xb5838d];
 const SKIN = [0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524, 0xd9a066, 0xb67a4a];
@@ -29,6 +29,8 @@ export function makePerson(state, world, home) {
     st: 'in', at: home, x: b.door.x, z: b.door.z, hd: 0, path: null, wi: 0,
     spd: range(r, 1.15, 1.5), purp: 'home', dest: null, stay: 0, until: 0,
     lat: range(r, -0.95, 0.95), repath: false, unreach: 0, worked: -1, face: null,
+    kerb: 0, // seconds spent waiting at the kerb for a car to pass
+    off: 0, // sideways offset from the path as drawn, eased towards lat
   };
 }
 
@@ -86,7 +88,7 @@ export function choosePlan(state, world, p) {
     if (h >= 6 && h < 19) opts.push(['park', 2.4], ['garden', 0.8], ['pier', 0.6], ['market', 1.2]);
     if (h >= 7 && h < 15) opts.push(['school', 0.6]);
     opts.push(['warung', h >= 17 || h < 2 ? 4 : 0.8]);
-    if (state.parkingIsPark) opts.push(['parking', 2.2]);
+    if (gardenOpen(state)) opts.push(['parking', 2.2]);
     if (late) opts.push(['park', 0.5]);
   }
   if (state.blackout && (h >= 18 || h < 6)) opts.push(['warung', 2], ['park', 1.5]);
@@ -148,6 +150,62 @@ function speedOf(state, p) {
   if (isWet(state) && !(p.hasUmb && state.weather === 'rain')) return 2.3;
   if (state.weather === 'snow') return p.spd * 0.85;
   return p.spd;
+}
+
+// Walkers step onto a zebra only when no car stands on it or is about to drive over it.
+function carComing(state, world, p) {
+  const here = cellIndex(p.x, p.z);
+  if (here < 0) return false;
+  const fx = Math.sin(p.hd), fz = Math.cos(p.hd);
+  if (world.grid.type[here] === T.CROSS) return carInTheWay(state, p, fx, fz);
+  const ahead = cellIndex(p.x + fx * 0.8, p.z + fz * 0.8);
+  if (ahead < 0 || world.grid.type[ahead] !== T.CROSS) return false;
+  const nx = p.x + fx * 1.5, nz = p.z + fz * 1.5;
+  for (const v of state.vehicles) {
+    if (v.st === 'parked') continue;
+    const vx = Math.sin(v.hd), vz = Math.cos(v.hd);
+    const dx = nx - v.x, dz = nz - v.z;
+    const lat = Math.abs(dx * vz - dz * vx);
+    if (lat > 8) continue; // anywhere across a four-lane road
+    const along = dx * vx + dz * vz;
+    if (lat < 2.6 && Math.abs(along) < v.len / 2 + 0.6) return true;
+    if (v.v > 0.5 && along > 0 && along < v.len / 2 + 2 + v.v * 1.3) return true;
+    // A driver has been waiting at the zebra for a while: let them through.
+    if (v.v <= 0.5 && v.waitT > 3 && v._why === 'crossing' && along > 0 && along < v.len / 2 + 4.5) return true;
+  }
+  return false;
+}
+
+// Halfway across and the next step would be into a car's side: wait for it to move on.
+// Passing in front of a car that is waiting for them is fine.
+function carInTheWay(state, p, fx, fz) {
+  const x = p.x + fx * 0.9, z = p.z + fz * 0.9;
+  for (const v of state.vehicles) {
+    if (v.st === 'parked') continue;
+    const vx = Math.sin(v.hd), vz = Math.cos(v.hd);
+    const dx = x - v.x, dz = z - v.z;
+    if (Math.abs(dx * vx + dz * vz) >= v.len / 2 || Math.abs(dx * vz - dz * vx) >= (v.wid || 1.8) / 2 + 0.2) continue;
+    // Heading into the body, not along its front.
+    const cx = v.x - p.x, cz = v.z - p.z;
+    if (fx * cx + fz * cz > 0.3 * Math.hypot(cx, cz)) return true;
+  }
+  return false;
+}
+
+// Walkers are drawn up to a metre to the side of their path; keep that inside open ground.
+function openAt(state, world, x, z) {
+  const idx = cellIndex(x, z);
+  if (idx < 0) return false;
+  const t = world.grid.type[idx];
+  if (t !== T.WALK && t !== T.GRASS && t !== T.CROSS) return false;
+  return !(world.grid.lot[idx] && !gardenOpen(state));
+}
+
+function sideStep(state, world, p, dt) {
+  const c = Math.cos(p.hd), s = -Math.sin(p.hd);
+  const fits = (o) => openAt(state, world, p.x + c * (o + Math.sign(o) * 0.9), p.z + s * (o + Math.sign(o) * 0.9));
+  const want = fits(p.lat) ? p.lat : fits(p.lat / 2) ? p.lat / 2 : 0;
+  p.off += (want - p.off) * Math.min(1, dt * 4);
 }
 
 function move(p, dt, speed) {
@@ -252,7 +310,15 @@ export function peopleStep(state, world, dt, ctx) {
         if (p.repath && ctx.budget <= 0) continue;
         p.repath = false;
       }
+      // After a long wait they go anyway for a few seconds (kerb < 0), so nothing locks up.
+      if (p.kerb >= 0 && carComing(state, world, p)) {
+        p.kerb += dt;
+        if (p.kerb > 12) p.kerb = -3;
+        continue;
+      }
+      p.kerb = p.kerb > 0 ? 0 : Math.min(0, p.kerb + dt);
       if (move(p, dt, speedOf(state, p))) arrive(state, world, p);
+      sideStep(state, world, p, dt);
     } else if (p.st === 'idle') {
       if (t >= p.until || p.repath) {
         const goHome = p.purp === 'watch' || p.purp === 'evac' ? 0.5 : 0.45 + (hourOf(state.clock) >= 21 ? 0.35 : 0) + (wet ? 0.3 : 0);

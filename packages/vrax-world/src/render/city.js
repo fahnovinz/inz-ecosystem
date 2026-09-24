@@ -177,12 +177,21 @@ export function buildCity(world, scene) {
   const parking = stripGroups.parking;
   const parkingLotGeo = [];
   parkingLotGeo.push(box(parking.innerX1 - parking.innerX0, 0.03, parking.zIn1 - parking.zIn0, (parking.innerX0 + parking.innerX1) / 2, 0.125, 0, 0x5a5e66));
+  const P = L.PARKING;
   for (const s of world.parkingSpots) {
-    parkingLotGeo.push(box(2.6, 0.02, 0.1, s.x, 0.15, s.z - 1.35, C.marking));
-    parkingLotGeo.push(box(2.6, 0.02, 0.1, s.x, 0.15, s.z + 1.35, C.marking));
+    for (const e of [-1, 1]) parkingLotGeo.push(box(4.6, 0.02, 0.1, s.x, 0.15, s.z + (e * P.pitch) / 2, C.marking));
   }
-  parkingLotGeo.push(box(1.2, 0.02, 0.1, L.PARKING.gateX, 0.15, L.PARKING.entryZ - 2.2, C.marking));
-  parkingLotGeo.push(box(1.2, 0.02, 0.1, L.PARKING.gateX, 0.15, L.PARKING.entryZ + 2.2, C.marking));
+  // Dashed centre line down the two-way aisle.
+  for (let z = P.z0 + 1; z < P.z1 - 1; z += 3) {
+    if (Math.abs(z + 0.7 - P.entryZ) < P.driveHalf + 0.5) continue;
+    parkingLotGeo.push(box(0.12, 0.02, 1.4, P.aisleX, 0.15, z + 0.7, C.marking));
+  }
+  // Driveway across the sidewalk, with a zebra for people walking along it.
+  const dx0 = P.gateX, dx1 = L.RIVERSIDE_X - L.ROAD_HALF;
+  terrain.push(box(dx1 - dx0, 0.03, P.driveHalf * 2, (dx0 + dx1) / 2, 0.125, P.entryZ, C.asphalt));
+  for (let z = P.entryZ - P.driveHalf + 0.35; z < P.entryZ + P.driveHalf - 0.2; z += 1) {
+    terrain.push(box(dx1 - dx0 - 0.3, 0.02, 0.5, (dx0 + dx1) / 2, 0.15, z + 0.25, C.marking));
+  }
   const parkingParkGeo = [];
   parkingParkGeo.push(box(parking.innerX1 - parking.innerX0, 0.035, parking.zIn1 - parking.zIn0, (parking.innerX0 + parking.innerX1) / 2, 0.126, 0, C.park));
   const ax = L.PARKING.aisleX;
@@ -818,8 +827,10 @@ function placeLamps(world) {
   }
   for (const s of L.STRIPS) {
     const x = s.x0 < 0 ? s.x0 + 0.35 : s.x1 - 0.35;
-    for (let z = s.z0 + 5; z < s.z1 - 2; z += 12) lamps.push([x, z, s.x0 < 0 ? -1 : 1, 0]);
-    const rx = s.x0 < 0 ? s.x1 - 0.6 : s.x0 + 0.6;
+    const drive = (z) => s.kind === 'parking' && Math.abs(z - L.PARKING.entryZ) < L.PARKING.driveHalf + 0.6;
+    for (let z = s.z0 + 5; z < s.z1 - 2; z += 12) if (!drive(z)) lamps.push([x, z, s.x0 < 0 ? -1 : 1, 0]);
+    // In the car park the river-side lamps stand just past the front bumpers.
+    const rx = s.x0 < 0 ? s.x1 - 0.6 : s.x0 + (s.kind === 'parking' ? 0.2 : 0.6);
     for (let z = s.z0 + 8; z < s.z1 - 2; z += 12) lamps.push([rx, z, s.x0 < 0 ? 1 : -1, 0]);
   }
   for (const bz of Object.values(L.BRIDGE_Z)) for (const s of [-1, 1]) for (const x of [-4, 4]) lamps.push([x, bz + s * (L.ROAD_HALF + L.SIDEWALK - 0.3), 0, -s]);

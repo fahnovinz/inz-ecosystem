@@ -22,6 +22,8 @@ export function createState(world, seed = 7) {
     river: 0,
     bridges: { north: false, south: false },
     parkingIsPark: false,
+    lotBusy: false, // cars still parked in, or driving through, Riverside Parking
+    gardenCrowd: false, // visitors due once the parking-turned-garden is empty
     festival: { on: false, since: 0 },
     fires: [],
     charred: [],

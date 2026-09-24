@@ -4,7 +4,7 @@
 import { RIVER_MIN, RIVER_MAX } from '../world/layout.js';
 import { range, pick, chance } from './rng.js';
 import { isWet, periodOf, burning } from './common.js';
-import { markBlockedWalkers, startTrip, shelterPlan, isOutdoors, redirect } from './people.js';
+import { markBlockedWalkers, startTrip, shelterPlan, isOutdoors, redirect, homePlan } from './people.js';
 import { rerouteAll, spawnTraffic, edgeUsesBridge } from './vehicles.js';
 import { startFire, extinguish, startRobbery, festivalCrowd } from './events.js';
 
@@ -102,12 +102,13 @@ export function applyAction(state, world, a) {
       for (const v of state.vehicles) {
         if (v.st === 'parked' && v.role === 'traffic') { parked++; if (a.park) v.until = t + range(state.rng, 0, 10); }
       }
-      if (a.park) {
-        const ctx = { budget: 20 };
-        redirect(state, world, ctx, 10, () => {
-          const s = pick(state.rng, world.spots.parking);
-          return s ? { purp: 'parking', dest: { k: 's', x: s[0], z: s[1], area: 'parking' }, stay: range(state.rng, 40, 120) } : null;
-        }, (p) => Math.abs(p.x) < 40);
+      // Visitors come once the last car has gone (events.js); back to parking, they leave.
+      state.gardenCrowd = a.park;
+      if (!a.park) {
+        const ctx = { budget: 1e9 };
+        for (const p of state.people) {
+          if (p.purp === 'parking' && (p.st === 'idle' || p.st === 'walk')) startTrip(state, world, p, homePlan(state, p), ctx, { escape: true });
+        }
       }
       return { kind: 'parking', park: a.park, parked };
     }

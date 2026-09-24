@@ -14,7 +14,7 @@ export const EDGE = 1.5; // margin between a lot and the slab edge
 export const CROSSWALK = 3;
 export const LANE_OFFSET = LANE / 2; // centre of the inner lane
 export const RIVER_HALF = 8;
-export const STRIP_W = 14;
+export const STRIP_W = 18;
 
 const LOT = { outerW: 17.5, innerW: 15, outerD: 14.5, innerD: 14 };
 const W_INNER = SIDEWALK + LOT.innerW + SIDEWALK;
@@ -72,13 +72,18 @@ export function stripInner(s) {
 const PARK = stripInner(strip('park'));
 export const PENDOPO = { x: (PARK.x0 + PARK.x1) / 2, z: 0, half: 3.2 };
 
-// Riverside Parking: two rows of stalls either side of one aisle, entered from the riverside road.
+// Riverside Parking: two rows of stalls either side of a two-way aisle. The driveway
+// is the fourth arm of the junction where the middle road meets the riverside road,
+// so the junction reservations handle cars turning in and out.
 const LOTP = stripInner(strip('parking'));
 export const PARKING = {
-  entryZ: -8,
+  entryZ: HZ[1],
+  driveHalf: 3, // the driveway is 6 m wide
+  gateX: LOTP.x1, // where the driveway meets the lot, past the sidewalk
   aisleX: (LOTP.x0 + LOTP.x1) / 2,
-  gateX: LOTP.x1 + 0.5,
-  rows: [LOTP.x0 + 2.4, LOTP.x1 - 2.4],
+  aisleLane: 1.4, // aisle lane centre from the aisle centre line
+  rows: [LOTP.x0 + 2.4, LOTP.x1 - 2.4], // stall centres; stalls are 4.8 m deep
+  pitch: 2.8,
   z0: LOTP.z0 + 3, z1: LOTP.z1 - 3,
 };
 export const PARKING_ENTRY_Z = PARKING.entryZ;

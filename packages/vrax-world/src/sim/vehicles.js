@@ -5,17 +5,17 @@
 import { rand, range, pick, chance, weighted } from './rng.js';
 import { buildPolyline, routeNodes, sampleAt, arcAtX, edgeBetween } from './roads.js';
 import { edgeBlocked, edgeCost, hourOf, isWet, flood1, flood2 } from './common.js';
-import { PARKING, LANE, RIVER_HALF, strip } from '../world/layout.js';
+import { PARKING, LANE, RIVER_HALF, CROSSWALK, strip } from '../world/layout.js';
 import { cellIndex, T } from './nav.js';
 
 export const VTYPES = {
-  car: { len: 4.2, vmax: 9 },
-  taxi: { len: 4.3, vmax: 9 },
-  bike: { len: 1.9, vmax: 9.5 },
-  bus: { len: 9, vmax: 7 },
-  fire: { len: 7.4, vmax: 11 },
-  police: { len: 4.5, vmax: 13.5 },
-  getaway: { len: 4.4, vmax: 11.5 },
+  car: { len: 4.2, wid: 1.86, vmax: 9 },
+  taxi: { len: 4.3, wid: 1.86, vmax: 9 },
+  bike: { len: 1.9, wid: 0.6, vmax: 9.5 },
+  bus: { len: 9, wid: 2.56, vmax: 7 },
+  fire: { len: 7.4, wid: 2.5, vmax: 11 },
+  police: { len: 4.5, wid: 1.9, vmax: 13.5 },
+  getaway: { len: 4.4, wid: 1.86, vmax: 11.5 },
 };
 const CAR_COLORS = [0xd8dde3, 0x2b2d42, 0xc1121f, 0x3a86ff, 0xf1f1f1, 0x8d99ae, 0x6a994e, 0xf4a261, 0x264653, 0xe9c46a, 0x9b2226, 0x5e548e];
 const BIKE_COLORS = [0x111111, 0xc1121f, 0x1d3557, 0xf1f1f1, 0x2a9d8f, 0xf77f00];
@@ -33,9 +33,9 @@ export function makeVehicle(state, type, role) {
   const spec = VTYPES[type];
   const color = type === 'bike' ? pick(r, BIKE_COLORS) : type === 'taxi' ? 0x3d8bd4 : type === 'bus' ? 0x0ea5e9 : type === 'fire' ? 0xc8231c : type === 'police' ? 0xf4f4f4 : type === 'getaway' ? 0x16181d : pick(r, CAR_COLORS);
   return {
-    id: state.nextId++, type, role, color, len: spec.len, vmax: spec.vmax * range(r, 0.92, 1.05),
+    id: state.nextId++, type, role, color, len: spec.len, wid: spec.wid, vmax: spec.vmax * range(r, 0.92, 1.05),
     x: 0, z: 0, hd: 0, v: 0, s: 0, poly: [0, 0, 0, 0], cum: [0, 0], plen: 0, zones: [], segs: [], zi: 0,
-    st: 'drive', goal: null, stopS: null, waitT: 0, unreach: false, turned: false, turnAt: null,
+    st: 'drive', goal: null, stopS: null, waitT: 0, unreach: false, turned: false, turnAt: null, revS: 0,
     reroute: false, until: 0, stops: [], busLi: 0,
     laneOff: type === 'bike' || type === 'bus' ? OUTER
       : role === 'fire' || role === 'police' ? INNER
@@ -65,14 +65,79 @@ function joinPlans(prefix, plan, suffix) {
 
 function setPlan(v, plan) {
   v.poly = plan.poly; v.cum = plan.cum; v.plen = plan.len; v.zones = plan.zones; v.segs = plan.segs;
-  v.s = 0; v.zi = 0; v.stopS = null;
+  v.s = 0; v.zi = 0; v.stopS = null; v.revS = 0;
   sampleAt(v.poly, v.cum, 0, tmp);
   v.x = tmp.x; v.z = tmp.z;
   if (tmp.dx || tmp.dz) v.hd = Math.atan2(tmp.dx, tmp.dz);
 }
 
-const lotIn = (spot) => [PARKING.gateX, PARKING.entryZ, PARKING.aisleX, PARKING.entryZ, PARKING.aisleX, spot.z, spot.x, spot.z];
-const lotOut = (spot) => [spot.x, spot.z, PARKING.aisleX, spot.z, PARKING.aisleX, PARKING.entryZ, PARKING.gateX, PARKING.entryZ];
+// ---- Riverside Parking ----------------------------------------------------------
+// Cars come in from the junction in the inner lane, keep left in the two-way aisle,
+// drive nose first into a stall and back out of it before driving off.
+
+// Polyline through the given corners with each inner corner rounded off.
+function rounded(corners, r) {
+  const out = [corners[0], corners[1]];
+  const n = corners.length / 2;
+  for (let i = 1; i < n - 1; i++) {
+    const px = corners[i * 2 - 2], pz = corners[i * 2 - 1];
+    const cx = corners[i * 2], cz = corners[i * 2 + 1];
+    const nx = corners[i * 2 + 2], nz = corners[i * 2 + 3];
+    const l0 = Math.hypot(cx - px, cz - pz), l1 = Math.hypot(nx - cx, nz - cz);
+    if (l0 < 1e-6 || l1 < 1e-6) continue;
+    const t0 = Math.min(r, l0 / 2), t1 = Math.min(r, l1 / 2);
+    const ax = cx - ((cx - px) / l0) * t0, az = cz - ((cz - pz) / l0) * t0;
+    const bx = cx + ((nx - cx) / l1) * t1, bz = cz + ((nz - cz) / l1) * t1;
+    out.push(ax, az);
+    for (let k = 1; k <= 6; k++) {
+      const t = k / 6, u = 1 - t;
+      out.push(u * u * ax + 2 * u * t * cx + t * t * bx, u * u * az + 2 * u * t * cz + t * t * bz);
+    }
+  }
+  out.push(corners[corners.length - 2], corners[corners.length - 1]);
+  return out;
+}
+
+function polyLen(pts) {
+  let len = 0;
+  for (let i = 2; i < pts.length; i += 2) len += Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]);
+  return len;
+}
+
+// Aisle lane for driving along z in direction dz: southbound keeps east, northbound west.
+const aisleLane = (dz) => PARKING.aisleX + (dz > 0 ? PARKING.aisleLane : -PARKING.aisleLane);
+
+// Continues a lane polyline that ends at the gate, westbound on the south side of the driveway.
+function lotIn(spot) {
+  const zIn = PARKING.entryZ + INNER;
+  const x = aisleLane(Math.sign(spot.z - PARKING.entryZ));
+  return rounded([PARKING.gateX, zIn, x, zIn, x, spot.z, spot.x, spot.z], 2.6).slice(2);
+}
+
+// Backs out of the stall into the aisle, then drives to the gate on the north side of the
+// driveway, where the lane polyline takes over. back: length of the reversing part.
+function lotOut(spot) {
+  const dz = -Math.sign(spot.z - PARKING.entryZ);
+  const x = aisleLane(dz);
+  const zBack = spot.z - dz * 3;
+  const back = rounded([spot.x, spot.z, x, spot.z, x, zBack], 2.4);
+  const zOut = PARKING.entryZ - INNER;
+  const fwd = rounded([x, zBack, x, zOut, PARKING.gateX, zOut], 2.6);
+  return { pts: [...back, ...fwd.slice(2, -2)], back: polyLen(back) };
+}
+
+// Nobody moving near the stall and nobody else backing out nearby, so backing out is safe.
+// When the lot is being cleared everyone may go at once, keeping only a car's length apart.
+function aisleClear(state, v, spot) {
+  const hurry = !parkingOpen(state);
+  const near = hurry ? 6 : 14, rev = hurry ? 8 : 22;
+  for (const o of state.vehicles) {
+    if (o === v || o.st === 'parked') continue;
+    const d = Math.hypot(o.x - PARKING.aisleX, o.z - spot.z);
+    if (d < near || (o.s < o.revS && d < rev)) return false;
+  }
+  return true;
+}
 
 // Lane polyline for this vehicle's lane.
 export function lanePoly(graph, v, nodes, opts = {}) {
@@ -100,7 +165,7 @@ export function vehicleTarget(state) {
       break;
     }
   }
-  if (state.rush) base = Math.max(base * 1.75, 98);
+  if (state.rush) base = Math.max(base * 1.6, 90);
   if (state.weather === 'storm') base *= 0.7;
   if (state.blackout) base *= 0.85;
   return Math.min(160, Math.round(base));
@@ -166,7 +231,7 @@ export function spawnTraffic(state, world, opts = {}) {
   const other = side === 'west' ? 'east' : 'west';
   let goal = null, nodes = null, unreach = false;
   const roll = rand(r);
-  if (roll < 0.14 && parkingOpen(state)) {
+  if (roll < 0.1 && parkingOpen(state)) {
     const spot = freeParkingSpot(state, world);
     if (spot) {
       goal = { k: 'parking', node: g.poiNode.parking, spot };
@@ -196,7 +261,7 @@ export function spawnTraffic(state, world, opts = {}) {
   const type = opts.type || weighted(r, [['car', wet ? 0.62 : 0.44], ['bike', wet ? 0.16 : 0.42], ['taxi', 0.1]]);
   const v = makeVehicle(state, type, 'traffic');
   v.goal = goal;
-  if (goal.k === 'parking') v.laneOff = OUTER;
+  if (goal.k === 'parking') v.laneOff = INNER; // the driveway takes one lane each way
   let plan = lanePoly(g, v, nodes);
   if (goal.k === 'parking') plan = joinPlans(null, plan, lotIn(goal.spot));
   setPlan(v, plan);
@@ -220,14 +285,18 @@ export function leaveParking(state, world, v) {
   const start = g.poiNode.parking;
   const blocked = edgeBlocked(state), cost = edgeCost(state);
   const side = world.exits[pick(state.rng, ['west', 'east'])];
-  let nodes = routeNodes(g, start, pick(state.rng, side), blocked, cost) || nearestExit(state, world, start);
+  const nodes = routeNodes(g, start, pick(state.rng, side), blocked, cost) || nearestExit(state, world, start);
   if (!nodes) { v.until = state.t + 20; return false; }
   const spot = v.goal.spot;
-  v.laneOff = OUTER;
-  const plan = joinPlans(lotOut(spot), lanePoly(g, v, nodes), null);
+  if (!aisleClear(state, v, spot)) { v.until = state.t + range(state.rng, 1, 3); return false; }
+  v.laneOff = INNER;
+  const out = lotOut(spot);
+  const plan = joinPlans(out.pts, lanePoly(g, v, nodes), null);
   v.goal = { k: 'exit', node: nodes[nodes.length - 1] };
   v.st = 'drive';
   setPlan(v, plan);
+  v.revS = out.back;
+  v.hd = spot.side < 0 ? -Math.PI / 2 : Math.PI / 2;
   return true;
 }
 
@@ -408,35 +477,116 @@ function pathsCross(a, b) {
   return false;
 }
 
-function tryClaim(state, v, zone) {
+// Reservations are { id, t, fx, fz, pts } holds; a driver kept waiting also files a
+// request ({ req: true, since }) so newcomers let the longest waiter go first.
+
+// True when this vehicle's path through the junction keeps clear of every live hold,
+// and of every request filed earlier than its own.
+// byId: after a long wait, holds of drivers who have not moved for a while are ignored;
+// the path check still keeps everyone from driving into anyone. It breaks gridlock rings.
+function claimFree(state, v, zone, byId = null) {
+  const list = state.claims[zone.node];
+  if (!Array.isArray(list) || !list.length) return true;
   const t = state.t;
-  let list = state.claims[zone.node];
-  if (!Array.isArray(list)) list = state.claims[zone.node] = [];
-  const mine = list.find((c) => c.id === v.id);
-  if (mine) { mine.t = t; return true; }
+  const mine = list.find((c) => c.id === v.id && c.req);
+  const since = mine ? mine.since : t;
   const pts = zonePath(v, zone);
   const fx = Math.sin(v.hd), fz = Math.cos(v.hd);
   for (const c of list) {
-    if (t - c.t > 3.5) continue;
+    if (c.id === v.id || t - c.t > 3.5) continue;
+    if (c.req && !(c.since < since - 1 && t - c.since > 14)) continue;
+    if (byId && !c.req) {
+      const o = byId.get(c.id);
+      if (o && o.waitT > 20 && o.v < 0.3) continue;
+    }
     // Same lane, same way in: that is following, which the gap check handles.
     const sameWay = c.fx * fx + c.fz * fz > 0.9;
     if (sameWay && Math.abs((pts[0] - c.pts[0]) * fz - (pts[1] - c.pts[1]) * fx) < 1.2) continue;
     if (pathsCross(pts, c.pts)) return false;
   }
-  list.push({ id: v.id, t, fx, fz, pts });
   return true;
 }
 
-// Don't block the box: a queue standing right past the junction means wait outside it.
-const tmpX = { x: 0, z: 0, dx: 0, dz: 1 };
-function exitBlocked(v, zone, vs) {
-  sampleAt(v.poly, v.cum, Math.min(v.plen, zone.s1 + v.len / 2 + 1.5), tmpX);
-  for (const o of vs) {
-    if (o === v || o.st === 'parked' || o.v > 1.5) continue;
-    if (o._fx * tmpX.dx + o._fz * tmpX.dz < 0.5) continue;
-    if (Math.hypot(o.x - tmpX.x, o.z - tmpX.z) < o.len / 2 + 1.2) return true;
+// req: a waiting driver's request rather than a hold.
+function addClaim(state, v, zone, req = false) {
+  let list = state.claims[zone.node];
+  if (!Array.isArray(list)) list = state.claims[zone.node] = [];
+  const had = list.find((c) => c.id === v.id);
+  if (had) {
+    had.t = state.t;
+    if (!req) delete had.req;
+    return;
   }
-  return false;
+  const c = { id: v.id, t: state.t, fx: Math.sin(v.hd), fz: Math.cos(v.hd), pts: zonePath(v, zone) };
+  if (req) { c.req = true; c.since = state.t; }
+  list.push(c);
+}
+
+// Free road ahead along this vehicle's own path, bumper to bumper. Unlike looking
+// straight ahead, this sees a car in front on a turn and anything parked across the path.
+const tmpP = { x: 0, z: 0, dx: 0, dz: 1 };
+function pathGap(v, vs, reach = 12, ignore = null) {
+  const near = [];
+  for (const o of vs) {
+    if (o === v || o === ignore || o.st === 'parked') continue;
+    if (Math.abs(o.x - v.x) < reach + 8 && Math.abs(o.z - v.z) < reach + 8) near.push(o);
+  }
+  if (!near.length) return null;
+  const half = (v.wid || 1.8) * 0.4;
+  for (let d = 0.3; d <= reach; d += 0.7) {
+    const s = v.s + v.len / 2 + d;
+    if (s > v.plen) break;
+    sampleAt(v.poly, v.cum, s, tmpP);
+    for (const o of near) {
+      const ox = tmpP.x - o.x, oz = tmpP.z - o.z;
+      const along = ox * o._fx + oz * o._fz;
+      if (Math.abs(along) > o.len / 2 + half) continue;
+      if (Math.abs(ox * o._fz - oz * o._fx) > (o.wid || 1.8) / 2 + half) continue;
+      return { gap: d, o };
+    }
+  }
+  return null;
+}
+
+// Distance ahead along v's path to the ground reversing car o still has to sweep, or null.
+const tmpR = { x: 0, z: 0, dx: 0, dz: 1 };
+function sweepGap(v, o) {
+  const sweep = [];
+  for (let s = o.s; s <= o.revS; s += 1) {
+    sampleAt(o.poly, o.cum, s, tmpR);
+    const l = Math.hypot(tmpR.dx, tmpR.dz) || 1;
+    // The tail leads while reversing.
+    sweep.push(tmpR.x + (tmpR.dx / l) * o.len / 2, tmpR.z + (tmpR.dz / l) * o.len / 2, tmpR.x, tmpR.z);
+  }
+  const r = (o.wid || 1.8) / 2 + (v.wid || 1.8) / 2 + 0.4;
+  for (let d = 0.3; d <= 14; d += 0.7) {
+    const s = v.s + v.len / 2 + d;
+    if (s > v.plen) break;
+    sampleAt(v.poly, v.cum, s, tmpP);
+    for (let i = 0; i < sweep.length; i += 2) {
+      if (Math.hypot(tmpP.x - sweep[i], tmpP.z - sweep[i + 1]) < r) return d;
+    }
+  }
+  return null;
+}
+
+// First zebra on the path within `reach` of the front bumper: { start, end } in metres.
+function zebraAhead(world, v, reach) {
+  const type = world.grid.type;
+  let start = -1;
+  for (let d = 0; d <= reach + 4; d += 0.5) {
+    const s = v.s + v.len / 2 + d;
+    if (s > v.plen) break;
+    sampleAt(v.poly, v.cum, s, tmpP);
+    const idx = cellIndex(tmpP.x, tmpP.z);
+    const on = idx >= 0 && type[idx] === T.CROSS;
+    if (on && start < 0) {
+      if (d === 0) return null; // already on it: carry on across
+      start = d;
+    } else if (!on && start >= 0) return { start, end: d };
+    else if (start < 0 && d > reach) return null;
+  }
+  return start >= 0 ? { start, end: reach + 4 } : null;
 }
 
 function releaseClaim(state, node, id) {
@@ -466,13 +616,14 @@ export function vehiclesStep(state, world, dt, ctx) {
   }
 
   const vs = state.vehicles;
-  for (const v of vs) { v._fx = Math.sin(v.hd); v._fz = Math.cos(v.hd); }
+  const byId = new Map();
+  for (const v of vs) { v._fx = Math.sin(v.hd); v._fz = Math.cos(v.hd); byId.set(v.id, v); }
   // Pedestrians on a zebra crossing have right of way.
   const crossers = [];
   for (const p of state.people) {
     if (p.st !== 'walk') continue;
     const idx = cellIndex(p.x, p.z);
-    if (idx >= 0 && world.grid.type[idx] === T.CROSS) crossers.push(p.x, p.z);
+    if (idx >= 0 && world.grid.type[idx] === T.CROSS) crossers.push(p.x, p.z, Math.sin(p.hd), Math.cos(p.hd));
   }
 
   for (const v of vs) {
@@ -495,6 +646,14 @@ export function vehiclesStep(state, world, dt, ctx) {
       if (v.turnAt === null) v.turnAt = t + range(state.rng, 14, 26);
       else if (t >= v.turnAt && !inZone(v)) turnBack(state, world, v);
     }
+    // Stuck for long behind a full road: take a detour to another way out of town.
+    if (v.role === 'traffic' && v.goal && v.goal.k === 'exit' && v.waitT > 45 && t >= (v.detourAt || 0)
+      && /^box/.test(v._why || '') && !inZone(v)) {
+      v.detourAt = t + 30;
+      const other = world.roads.ends.filter((e) => e !== v.goal.node);
+      const to = pick(state.rng, other);
+      if (replan(state, world, v, to)) v.goal = { k: 'exit', node: to };
+    }
     if (v.role === 'bus' && v.plen - v.s < 20 && !inZone(v) && t >= (v.nextPlan || 0)) {
       v.nextPlan = t + 2;
       planBus(state, world, v);
@@ -502,38 +661,60 @@ export function vehiclesStep(state, world, dt, ctx) {
 
     let target = speedLimit(state, world, v);
 
-    // Keep distance to whatever is in front, going roughly the same way.
-    // Crossing traffic is the junction claims' job; following it would let two
-    // cars at right angles wait on each other forever.
+    // Keep distance to whatever stands on the road ahead along this vehicle's path.
     const emergency = EMERGENCY.has(v.role);
-    // A driver stuck for a while (not at a barrier) edges forward so knots untangle.
-    const impatient = v.waitT > 8 && v.stopS === null;
     v._why = '';
     let gap = Infinity;
+    let ahead = pathGap(v, vs);
+    // Two vehicles each in the other's path (a knot, rare): the older one goes first.
+    if (ahead && ahead.o._blk === v.id && v.id < ahead.o.id) ahead = pathGap(v, vs, 12, ahead.o);
+    v._blk = ahead ? ahead.o.id : 0;
+    if (ahead) { gap = ahead.gap; v._why = `gap:${ahead.o.id}`; }
+    // Stay out of the ground a car backing out of a stall is about to sweep.
     for (const o of vs) {
-      if (o === v || o.st === 'parked') continue;
-      if (o._fx * v._fx + o._fz * v._fz < 0.5) continue;
-      if (impatient && o.waitT > 8 && o.stopS === null) continue;
-      const dx = o.x - v.x, dz = o.z - v.z;
-      const along = dx * v._fx + dz * v._fz;
-      if (along <= 0 || along > 14) continue;
-      const lat = Math.abs(dx * v._fz - dz * v._fx);
-      if (lat > (emergency ? 1.0 : 1.35)) continue;
-      // Side by side at a slight angle both cars can look "ahead" of each other;
-      // only the one that is further behind yields.
-      const back = -(dx * o._fx + dz * o._fz);
-      if (back > along || (back === along && v.id < o.id)) continue;
-      const g = along - (v.len + o.len) / 2;
-      if (g < gap) { gap = g; v._why = `gap:${o.id}`; }
+      if (o === v || !(o.s < o.revS) || o.st !== 'drive') continue;
+      if (o._blk === v.id && v.id < o.id) continue; // the same kind of knot
+      if (Math.abs(o.x - v.x) > 22 || Math.abs(o.z - v.z) > 22) continue;
+      const d = sweepGap(v, o);
+      if (d !== null && d < gap) { gap = d; v._blk = o.id; v._why = `gap:${o.id}`; }
+    }
+    // Queueing: never come to a stop on a zebra; wait before it unless there is room past it.
+    if (ahead && ahead.o.v < 1.5 && !emergency) {
+      const z = zebraAhead(world, v, gap);
+      if (z && gap - z.end < v.len + 0.8) { gap = Math.min(gap, z.start - 0.2); v._why = `gap:${ahead.o.id}`; }
     }
     if (gap < Infinity) target = Math.min(target, Math.max(0, (gap - 1.4) * 1.5));
-    if (!emergency) {
-      for (let i = 0; i < crossers.length; i += 2) {
+    if (v.s < v.revS) {
+      // Backing out: slow, easing to a stop where it changes direction. The path check
+      // above already looks behind, since the tail leads.
+      target = Math.min(target, 1.5, Math.max(0.35, (v.revS - v.s) * 1.2));
+    }
+    // People on a zebra: stop before the zebra, or behind them when already on it.
+    // Someone further across counts while they walk towards this lane.
+    if (!emergency && crossers.length) {
+      const look = v.len / 2 + 3 + (v.v * v.v) / 10;
+      // Turning inside a junction, only people in or next to this lane count; already
+      // on a zebra, only people right in front, so the car clears it quickly.
+      const zone = v.zones[v.zi];
+      const nose = cellIndex(v.x + v._fx * v.len * 0.45, v.z + v._fz * v.len * 0.45);
+      const onZebra = nose >= 0 && world.grid.type[nose] === T.CROSS;
+      const wide = onZebra ? 1.3 : zone && v.s >= zone.s0 - 0.5 ? 2.2 : 3.6;
+      let near = Infinity;
+      for (let i = 0; i < crossers.length; i += 4) {
         const dx = crossers[i] - v.x, dz = crossers[i + 1] - v.z;
         const along = dx * v._fx + dz * v._fz;
-        if (along <= 0 || along > v.len / 2 + 5) continue;
-        if (Math.abs(dx * v._fz - dz * v._fx) > 1.9) continue;
-        target = Math.min(target, Math.max(0, (along - v.len / 2 - 1.2) * 1.5));
+        // Beside the car rather than in front of it: waiting would not help either of them.
+        if (along <= v.len / 2 - 0.2 || along > look) continue;
+        const lat = dx * v._fz - dz * v._fx;
+        if (Math.abs(lat) > wide) continue;
+        if (Math.abs(lat) > 2.2 && (crossers[i + 2] * v._fz - crossers[i + 3] * v._fx) * Math.sign(lat) > -0.3) continue;
+        near = Math.min(near, along);
+      }
+      if (near < Infinity) {
+        const front = near - v.len / 2;
+        const zb = zebraAhead(world, v, front);
+        const stop = zb && zb.start < front ? zb.start - 0.3 : front - 1.2;
+        target = Math.min(target, stop > 0 ? Math.min(Math.sqrt(12 * stop), stop * 1.5) : 0);
         v._why = 'crossing';
       }
     }
@@ -543,19 +724,47 @@ export function vehiclesStep(state, world, dt, ctx) {
       releaseClaim(state, v.zones[v.zi].node, v.id);
       v.zi++;
     }
-    if (!emergency && !impatient && v.zi < v.zones.length) {
+    if (!emergency && v.zi < v.zones.length) {
       const z = v.zones[v.zi];
       const dist = z.s0 - v.s;
-      if (dist < 5 && dist > -0.2) {
-        const held = Array.isArray(state.claims[z.node]) && state.claims[z.node].some((c) => c.id === v.id);
+      // The stop line is behind the zebra in front of the junction.
+      const line = CROSSWALK + 0.4 + v.len / 2;
+      const list = state.claims[z.node];
+      const mine = Array.isArray(list) && list.find((c) => c.id === v.id && !c.req);
+      if (mine) mine.t = t;
+      if (!mine && dist > -0.2 && dist < line + 3 + v.v * 1.4) {
         let why = '';
-        if (!held && exitBlocked(v, z, vs)) why = `box:${z.node}`;
-        else if (!tryClaim(state, v, z)) why = `claim:${z.node}`;
-        if (why) { target = Math.min(target, Math.max(0, (dist - 0.6) * 1.5)); v._why = why; }
-      } else if (dist <= -0.2) {
-        const list = state.claims[z.node];
-        const c = Array.isArray(list) && list.find((x) => x.id === v.id);
-        if (c) c.t = t;
+        // Don't block the box: go only when there is room past the junction and its zebra,
+        // counting the cars already in the junction that are heading the same way out.
+        sampleAt(v.poly, v.cum, z.s0, tmpP);
+        const sx = tmpP.x, sz = tmpP.z;
+        sampleAt(v.poly, v.cum, z.s1, tmpP);
+        const ex = tmpP.x, ez = tmpP.z;
+        let ahead = 0;
+        if (Array.isArray(list)) {
+          for (const c of list) {
+            if (c.req || c.id === v.id) continue;
+            const n = c.pts.length;
+            if (Math.hypot(c.pts[n - 2] - ex, c.pts[n - 1] - ez) > 2.5) continue;
+            if (Math.hypot(c.pts[0] - sx, c.pts[1] - sz) < 2.5) continue; // the car in front: just follow it
+            const o = byId.get(c.id);
+            if (o && o.s < o.plen) ahead += o.len + 1.2;
+          }
+        }
+        const q = pathGap(v, vs, z.s1 - v.s - v.len / 2 + CROSSWALK + v.len + 1 + ahead);
+        if (q && q.o.v < 1.5) why = `box:${z.node}`;
+        else if (!claimFree(state, v, z, v.waitT > 10 ? byId : null)) why = `claim:${z.node}`;
+        if (dist <= v.len / 2 + 0.3) {
+          // Already nosing into the box: commit, and hold the junction while clearing it.
+          addClaim(state, v, z);
+        } else if (!why && dist < line + 3) {
+          addClaim(state, v, z);
+        } else if (why) {
+          if (why[0] === 'c' && dist < line + 3) addClaim(state, v, z, true);
+          const room = dist > line - 0.5 ? dist - line : dist - v.len / 2 - 0.2;
+          target = Math.min(target, room > 0 ? Math.min(Math.sqrt(12 * room), room * 3) : 0);
+          v._why = why;
+        }
       }
     }
 
@@ -577,12 +786,15 @@ export function vehiclesStep(state, world, dt, ctx) {
     v.s = Math.min(v.plen, v.s + v.v * dt);
     sampleAt(v.poly, v.cum, v.s, tmp);
     v.x = tmp.x; v.z = tmp.z;
-    if (Math.abs(tmp.dx) + Math.abs(tmp.dz) > 1e-6) v.hd = Math.atan2(tmp.dx, tmp.dz);
+    if (Math.abs(tmp.dx) + Math.abs(tmp.dz) > 1e-6) v.hd = Math.atan2(tmp.dx, tmp.dz) + (v.s < v.revS ? Math.PI : 0);
     v.waitT = v.v < 0.4 ? v.waitT + dt : 0;
 
     if (v.s >= v.plen - 0.02) arriveVehicle(state, world, v);
   }
   state.vehicles = state.vehicles.filter((v) => v.st !== 'done');
+  // Cars in the stalls or the aisle; the driveway past the gate does not count.
+  state.lotBusy = state.vehicles.some((v) => v.st === 'parked' || (v.goal && v.goal.k === 'parking' && v.st === 'drive')
+    || (v.x > LOT.x0 && v.x < PARKING.gateX && Math.abs(v.z - PARKING.entryZ) < PARKING.z1 - PARKING.entryZ + 2));
 }
 
 function arriveVehicle(state, world, v) {

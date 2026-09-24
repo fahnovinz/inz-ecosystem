@@ -25,15 +25,20 @@ export function burning(state) {
   return state.fires.filter((f) => f.heat > 0);
 }
 
+// Riverside Parking turned garden, once the last car has driven out.
+export const gardenOpen = (state) => state.parkingIsPark && !state.lotBusy;
+
 // Returns (cellIdx) => true when a pedestrian may not step there right now.
 export function pedBlocked(state, world, { ignoreFire = false } = {}) {
-  const { type, region } = world.grid;
+  const { type, region, lot } = world.grid;
   const f1 = flood1(state), f2 = flood2(state);
+  const carPark = !gardenOpen(state);
   const n = state.bridges.north || f2, s = state.bridges.south || f2;
   const fires = ignoreFire ? [] : burning(state).map((f) => world.buildings[f.b]);
   return (idx) => {
     const t = type[idx];
     if (t === T.BLOCK || t === T.ROAD || t === T.WATER) return true;
+    if (carPark && lot[idx]) return true;
     const r = region[idx];
     if (r === R.BRIDGE_N && n) return true;
     if (r === R.BRIDGE_S && s) return true;

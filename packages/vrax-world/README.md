@@ -67,7 +67,9 @@ The interpreter understands paraphrases, place names, amounts (`50 cm`, `setenga
 | Blackout | Windows and street lamps go dark, people come out with phone torches, and only VRAX Tower stays lit on backup power. |
 | Time of day / season | Sun, shadows, window lights and street lamps follow the clock. Winter covers roofs and parks in snow; autumn turns the trees. |
 
-Traffic keeps left, as in Indonesia. Streets are built to real proportions: two 3.5 m lanes each way, 3 m sidewalks and wide corner turns. Motorbikes and the TransVrax bus keep to the kerb lane, cars and taxis pick either lane, turns that don't cross go through a junction together, and nobody enters a junction when the road beyond it is backed up. Drivers stop for people on zebra crossings. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
+Traffic keeps left, as in Indonesia. Streets are built to real proportions: two 3.5 m lanes each way, 3 m sidewalks and wide corner turns. Motorbikes and the TransVrax bus keep to the kerb lane, cars and taxis pick either lane, turns that don't cross go through a junction together, and nobody enters a junction when the road beyond it is backed up. Nobody drives through anybody: drivers keep their distance along their own path, even mid-turn, wait behind the zebra at a junction, and stop for people on it; people wait at the kerb for a car that is close, and let a driver through who has been waiting.
+
+Riverside Parking has two rows of stalls either side of a two-way aisle, with its driveway as the fourth arm of the junction on the riverside road. Cars drive in nose first and back out before leaving; people walk around the lot on the sidewalk and cross the driveway on a zebra. Turned into a garden, it opens once the last car has gone. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
 
 ## Controls
 

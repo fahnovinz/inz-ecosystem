@@ -3,7 +3,7 @@
 import { range, pick, chance, rand } from './rng.js';
 import { routeNodes } from './roads.js';
 import { cellIndex } from './nav.js';
-import { edgeBlocked, edgeCost, isWet, pedBlocked, flood2 } from './common.js';
+import { edgeBlocked, edgeCost, isWet, pedBlocked, flood2, gardenOpen } from './common.js';
 import { makeVehicle, replan, setBarrier, setPlan, sendHome, currentSeg, lanePoly, OUTER } from './vehicles.js';
 import { startTrip, redirect, homePlan } from './people.js';
 import { BOAT_CLEARANCE, BOAT_AGROUND, BRIDGE_Z, PENDOPO, HALF_W, HALF_D, RIVER_HALF, ROAD_HALF, SIDEWALK, strip } from '../world/layout.js';
@@ -297,7 +297,8 @@ function robberyStep(state, world, dt, ctx, emit) {
         if (v.st !== 'drive' && v.st !== 'hold') continue;
         const seg = currentSeg(car);
         const target = seg ? seg.b : car.goal.node;
-        if (v.st === 'drive' && target !== undefined && target !== null) {
+        // Inside a junction there is no edge to route from: finish the turn first.
+        if (v.st === 'drive' && target !== undefined && target !== null && currentSeg(v)) {
           if (!replan(state, world, v, target) && Math.hypot(v.x - car.x, v.z - car.z) > 6) {
             v.st = 'hold';
             v.until = state.t + 1;
@@ -389,5 +390,13 @@ export function eventsStep(state, world, dt, ctx, emit) {
   if (state.festival.on && state.t >= (state.festival.nextPull || 0)) {
     state.festival.nextPull = state.t + 6;
     if (!isWet(state)) festivalCrowd(state, world, ctx, 3);
+  }
+  // The new garden by the river draws a crowd as soon as the last car has left.
+  if (state.gardenCrowd && gardenOpen(state)) {
+    state.gardenCrowd = false;
+    redirect(state, world, { budget: 20 }, 10, () => {
+      const s = pick(state.rng, world.spots.parking);
+      return s ? { purp: 'parking', dest: { k: 's', x: s[0], z: s[1], area: 'parking' }, stay: range(state.rng, 40, 120) } : null;
+    }, (p) => Math.abs(p.x) < 40);
   }
 }

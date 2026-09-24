@@ -266,9 +266,11 @@ export function createRenderer(container, world, { onPick, onSky } = {}) {
     // Places that change with state.
     city.bridgeGroups.north.group.visible = state.bridges.north;
     city.bridgeGroups.south.group.visible = state.bridges.south;
-    city.parkingLot.visible = !state.parkingIsPark;
-    city.parkingPark.visible = state.parkingIsPark;
-    city.parkTrees.setVisible(state.parkingIsPark);
+    // The garden takes over once the last car has pulled out of its stall.
+    const garden = state.parkingIsPark && !state.vehicles.some((v) => v.st === 'parked' || v.s < v.revS);
+    city.parkingLot.visible = !garden;
+    city.parkingPark.visible = garden;
+    city.parkTrees.setVisible(garden);
     updateCharred(state);
 
     // Boats ride the water level.

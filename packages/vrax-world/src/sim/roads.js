@@ -2,7 +2,7 @@
 // shortest-path routing, and lane polylines for vehicles to follow.
 // Vehicles keep left, so the lane sits to the left of the direction of travel.
 
-import { HALF_W, HALF_D, VX, HZ, ROAD_HALF, LANE_OFFSET, RIVERSIDE_X } from '../world/layout.js';
+import { HALF_W, HALF_D, VX, HZ, ROAD_HALF, LANE_OFFSET, RIVERSIDE_X, PARKING } from '../world/layout.js';
 
 const key = (x, z) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
 
@@ -15,7 +15,8 @@ export function buildRoadGraph(pois) {
   lines.push({ axis: 'h', c: HZ[0], from: -HALF_W, to: HALF_W, stops: [...horizontalStops], bridge: 'north' });
   lines.push({ axis: 'h', c: HZ[2], from: -HALF_W, to: HALF_W, stops: [...horizontalStops], bridge: 'south' });
   lines.push({ axis: 'h', c: HZ[1], from: -HALF_W, to: -RIVERSIDE_X, stops: [-HALF_W, VX[0], VX[1]] });
-  lines.push({ axis: 'h', c: HZ[1], from: RIVERSIDE_X, to: HALF_W, stops: [VX[2], VX[3], HALF_W] });
+  // The east half starts at the parking gate: the driveway is the junction's fourth arm.
+  lines.push({ axis: 'h', c: HZ[1], from: PARKING.gateX, to: HALF_W, stops: [PARKING.gateX, VX[2], VX[3], HALF_W] });
 
   // Attach each point of interest to the nearest road line.
   const poiStops = [];
