@@ -1,15 +1,27 @@
-// Orbit-style camera for a tabletop city: drag to pan, wheel or pinch to zoom,
-// right-drag or two-finger twist to turn, arrow keys and +/- on the keyboard.
+// Camera for a tabletop city.
+// Touch: drag to move, pinch to zoom, twist to turn, two-finger drag up/down to tilt,
+// double-tap to zoom in. Mouse: drag to move, wheel to zoom at the cursor, right-drag
+// (or Shift-drag) to turn and tilt. Keyboard: arrows, + and -, 0 to reset.
+// While a finger or the mouse is down the view follows it exactly; wheel, keys,
+// buttons and fly-tos ease in.
 
 import * as THREE from 'three';
 
 const DEFAULT = { x: 2, z: 3, dist: 262, az: 0.36, el: 0.76 };
+const MIN_DIST = 20;
+const MAX_DIST = 360;
+const KEYS = ['x', 'z', 'dist', 'az', 'el'];
+// Interface on top of the city that keeps its own touches. Landmark labels are not
+// listed: a drag that starts on a label still moves the view.
+const UI = '.dock, .inspector, .stage-top, .card, dialog, button:not(.lm-label), input';
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 export class CameraRig {
-  constructor(camera, dom, { onClick } = {}) {
+  constructor(camera, surface, canvas, { onClick } = {}) {
     this.camera = camera;
-    this.dom = dom;
+    this.surface = surface;
+    this.canvas = canvas;
     this.onClick = onClick;
     this.want = { ...DEFAULT };
     this.cur = { ...DEFAULT };
@@ -17,10 +29,14 @@ export class CameraRig {
     this.tween = null;
     this.follow = null;
     this.pointers = new Map();
-    this.lastPinch = null;
-    this.down = null;
+    this.gesture = null;
     this.userMoved = false;
+    this.lastTap = null;
+    this.suppressClickUntil = 0;
+    this.ray = new THREE.Raycaster();
+    this.ndc = new THREE.Vector2();
     this.bind();
+    this.apply();
   }
 
   defaults() {
@@ -30,7 +46,7 @@ export class CameraRig {
   setAspect(aspect) {
     // Portrait screens frame the river and its two banks instead of shrinking the whole city.
     this.fit = aspect < 0.8 ? 1.12 : Math.max(1, Math.pow(1.6 / aspect, 0.85));
-    if (!this.userMoved) { this.want.dist = DEFAULT.dist * this.fit; }
+    if (!this.userMoved) this.want.dist = DEFAULT.dist * this.fit;
   }
 
   reset(duration = 0.9) {
@@ -42,117 +58,241 @@ export class CameraRig {
   flyTo(target, duration = 1.2) {
     const from = { ...this.want };
     const to = { ...from, ...target };
-    if (to.dist) to.dist = Math.min(360, Math.max(40, to.dist));
+    to.dist = Math.min(MAX_DIST, Math.max(MIN_DIST, to.dist));
     this.tween = { from, to, t: 0, d: Math.max(0.01, duration) };
   }
 
-  panBy(dx, dz) {
-    this.want.x += dx; this.want.z += dz;
+  clamp() {
+    const w = this.want;
+    w.x = Math.max(-72, Math.min(72, w.x));
+    w.z = Math.max(-46, Math.min(46, w.z));
+    w.dist = Math.min(MAX_DIST, Math.max(MIN_DIST, w.dist));
+    w.el = Math.max(0.3, Math.min(1.36, w.el));
+  }
+
+  // Take manual control: stop animations and make the view follow input immediately.
+  takeOver() {
+    this.tween = null;
+    this.follow = null;
+    this.userMoved = true;
+  }
+
+  snap() {
+    this.clamp();
+    for (const k of KEYS) this.cur[k] = this.want[k];
+    this.apply();
+  }
+
+  apply() {
+    const { x, z, dist, az, el } = this.cur;
+    const ce = Math.cos(el);
+    this.camera.position.set(x + dist * ce * Math.sin(az), dist * Math.sin(el), z + dist * ce * Math.cos(az));
+    this.camera.lookAt(x, 0, z);
+    this.camera.updateMatrixWorld();
+  }
+
+  // Point on the ground under a screen position (client coordinates), or null.
+  groundAt(cx, cy, out = new THREE.Vector3()) {
+    const r = this.canvas.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    this.ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+    this.ray.setFromCamera(this.ndc, this.camera);
+    return this.ray.ray.intersectPlane(GROUND, out);
+  }
+
+  // Keep the ground point that was under (ax, ay) under (bx, by).
+  dragGround(ax, ay, bx, by) {
+    const a = this.groundAt(ax, ay), b = this.groundAt(bx, by);
+    if (!a || !b) return;
+    this.want.x += a.x - b.x;
+    this.want.z += a.z - b.z;
+  }
+
+  // Zoom by factor f keeping the point under the cursor in place.
+  zoomAt(f, cx, cy) {
+    const g = cx === undefined ? null : this.groundAt(cx, cy);
+    const next = Math.min(MAX_DIST, Math.max(MIN_DIST, this.want.dist * f));
+    const k = next / this.want.dist;
+    if (g) {
+      this.want.x = g.x + (this.want.x - g.x) * k;
+      this.want.z = g.z + (this.want.z - g.z) * k;
+    }
+    this.want.dist = next;
     this.clamp();
   }
 
-  zoomBy(f) {
-    this.want.dist = Math.min(360, Math.max(40, this.want.dist * f));
-  }
-
-  clamp() {
-    this.want.x = Math.max(-72, Math.min(72, this.want.x));
-    this.want.z = Math.max(-46, Math.min(46, this.want.z));
-    this.want.el = Math.max(0.32, Math.min(1.36, this.want.el));
-  }
-
-  unitsPerPixel() {
-    const h = this.dom.clientHeight || 600;
-    return (2 * this.cur.dist * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) / h;
+  // Eased steps for buttons and keys.
+  zoomStep(f) { this.takeOver(); this.zoomAt(f); }
+  rotateStep(da) { this.takeOver(); this.want.az += da; }
+  panStep(right, forward) {
+    this.takeOver();
+    const s = Math.sin(this.want.az), c = Math.cos(this.want.az);
+    const step = this.want.dist * 0.05;
+    this.want.x += (c * right - s * forward) * step;
+    this.want.z += (-s * right - c * forward) * step;
+    this.clamp();
   }
 
   bind() {
-    const el = this.dom;
-    el.addEventListener('contextmenu', (e) => e.preventDefault());
-    el.addEventListener('pointerdown', (e) => {
-      el.setPointerCapture(e.pointerId);
-      this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, button: e.button, mode: e.button === 2 || e.shiftKey || e.ctrlKey ? 'rotate' : 'pan' });
-      if (this.pointers.size === 1) this.down = { x: e.clientX, y: e.clientY, t: performance.now(), moved: 0 };
-      else this.down = null;
-      this.lastPinch = null;
-      this.tween = null;
-    });
-    el.addEventListener('pointermove', (e) => {
-      const p = this.pointers.get(e.pointerId);
-      if (!p) return;
-      const dx = e.clientX - p.x, dy = e.clientY - p.y;
-      p.x = e.clientX; p.y = e.clientY;
-      if (this.down) this.down.moved += Math.abs(dx) + Math.abs(dy);
-      if (this.pointers.size >= 2) { this.pinch(); return; }
-      if (this.down && this.down.moved < 4) return;
-      this.follow = null;
-      this.userMoved = true;
-      if (p.mode === 'rotate') {
-        this.want.az -= dx * 0.006;
-        this.want.el += dy * 0.004;
-        this.clamp();
-      } else {
-        const upp = this.unitsPerPixel();
-        const s = Math.sin(this.cur.az), c = Math.cos(this.cur.az);
-        const k = 1 / Math.max(0.45, Math.sin(this.cur.el));
-        this.panBy(-(c * dx) * upp - s * dy * upp * k, (s * dx) * upp - c * dy * upp * k);
-      }
-    });
-    const end = (e) => {
-      const was = this.pointers.get(e.pointerId);
-      this.pointers.delete(e.pointerId);
-      this.lastPinch = null;
-      if (was && this.down && this.down.moved < 6 && performance.now() - this.down.t < 600 && this.onClick) {
-        const r = el.getBoundingClientRect();
-        this.onClick(e.clientX - r.left, e.clientY - r.top);
-      }
-      if (this.pointers.size === 0) this.down = null;
-    };
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
-    el.addEventListener('wheel', (e) => {
+    const surface = this.surface;
+    surface.addEventListener('contextmenu', (e) => { if (e.target === this.canvas) e.preventDefault(); });
+    surface.addEventListener('pointerdown', (e) => this.onDown(e));
+    window.addEventListener('pointermove', (e) => this.onMove(e));
+    window.addEventListener('pointerup', (e) => this.onUp(e));
+    window.addEventListener('pointercancel', (e) => this.onUp(e, true));
+    // A drag that began on a label must not also click it.
+    surface.addEventListener('click', (e) => {
+      if (performance.now() < this.suppressClickUntil) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+    this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      this.tween = null;
-      this.userMoved = true;
-      const f = Math.exp((e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) * 0.0012);
-      this.zoomBy(f);
+      this.takeOver();
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+      this.zoomAt(Math.exp(Math.max(-60, Math.min(60, delta)) * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX, e.clientY);
     }, { passive: false });
-    el.addEventListener('keydown', (e) => {
-      const step = this.cur.dist * 0.04;
-      const s = Math.sin(this.cur.az), c = Math.cos(this.cur.az);
+    this.canvas.addEventListener('keydown', (e) => {
       let used = true;
-      if (e.key === 'ArrowLeft') this.panBy(-c * step, s * step);
-      else if (e.key === 'ArrowRight') this.panBy(c * step, -s * step);
-      else if (e.key === 'ArrowUp') this.panBy(-s * step, -c * step);
-      else if (e.key === 'ArrowDown') this.panBy(s * step, c * step);
-      else if (e.key === '+' || e.key === '=') this.zoomBy(0.85);
-      else if (e.key === '-' || e.key === '_') this.zoomBy(1 / 0.85);
+      if (e.key === 'ArrowLeft') this.panStep(-1, 0);
+      else if (e.key === 'ArrowRight') this.panStep(1, 0);
+      else if (e.key === 'ArrowUp') this.panStep(0, 1);
+      else if (e.key === 'ArrowDown') this.panStep(0, -1);
+      else if (e.key === '+' || e.key === '=') this.zoomStep(0.8);
+      else if (e.key === '-' || e.key === '_') this.zoomStep(1.25);
+      else if (e.key === '[') this.rotateStep(-0.35);
+      else if (e.key === ']') this.rotateStep(0.35);
       else if (e.key === '0') this.reset();
       else used = false;
-      if (used) { e.preventDefault(); e.stopPropagation(); this.userMoved = true; this.tween = null; this.follow = null; }
+      if (used) { e.preventDefault(); e.stopPropagation(); }
     });
   }
 
-  pinch() {
-    const pts = [...this.pointers.values()].slice(0, 2);
-    const mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
-    const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-    const a = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
-    if (this.lastPinch) {
-      const L = this.lastPinch;
-      if (d > 0 && L.d > 0) this.zoomBy(L.d / d);
-      let da = a - L.a;
+  onDown(e) {
+    if (e.target !== this.canvas && e.target.closest(UI)) return;
+    if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
+    const onLabel = !!e.target.closest('.lm-label');
+    this.pointers.set(e.pointerId, {
+      x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(),
+      rotate: e.button === 2 || e.shiftKey || e.ctrlKey, onLabel, type: e.pointerType,
+    });
+    if (this.pointers.size === 1) this.gesture = { kind: 'tap', moved: 0 };
+    else if (this.pointers.size === 2) this.startTwo();
+  }
+
+  startTwo() {
+    const [a, b] = [...this.pointers.values()];
+    this.gesture = { kind: 'two', mode: null, moved: 99, start: { a: { x: a.x, y: a.y }, b: { x: b.x, y: b.y } } };
+    this.two = this.twoState();
+  }
+
+  twoState() {
+    const [a, b] = [...this.pointers.values()];
+    return {
+      mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2,
+      d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x),
+    };
+  }
+
+  onMove(e) {
+    const p = this.pointers.get(e.pointerId);
+    if (!p || !this.gesture) return;
+    const x = e.clientX, y = e.clientY;
+    if (this.pointers.size >= 2) {
+      p.x = x; p.y = y;
+      this.moveTwo();
+      return;
+    }
+    const g = this.gesture;
+    if (g.kind === 'tap') {
+      if (Math.hypot(x - p.sx, y - p.sy) < (p.type === 'mouse' ? 3 : 7)) return;
+      g.kind = 'drag';
+    }
+    this.takeOver();
+    if (p.rotate) {
+      this.want.az -= (x - p.x) * 0.006;
+      this.want.el += (y - p.y) * 0.004;
+    } else {
+      this.dragGround(p.x, p.y, x, y);
+    }
+    p.x = x; p.y = y;
+    this.snap();
+  }
+
+  moveTwo() {
+    const g = this.gesture;
+    const now = this.twoState();
+    const last = this.two;
+    if (!g.mode) {
+      // Decide once per gesture: fingers moving up or down together tilt; anything else pinches.
+      const [a, b] = [...this.pointers.values()];
+      const s = g.start;
+      const dya = a.y - s.a.y, dyb = b.y - s.b.y, dxa = a.x - s.a.x, dxb = b.x - s.b.x;
+      const spread = Math.abs(now.d - Math.hypot(s.a.x - s.b.x, s.a.y - s.b.y));
+      const travel = Math.max(Math.abs(dya), Math.abs(dyb), Math.abs(dxa), Math.abs(dxb));
+      if (travel < 10 && spread < 10) return;
+      const together = dya * dyb > 0 && Math.min(Math.abs(dya), Math.abs(dyb)) > 6;
+      const vertical = Math.abs(dya + dyb) > 1.6 * Math.abs(dxa + dxb);
+      g.mode = together && vertical && spread < 24 ? 'tilt' : 'pinch';
+      this.two = now;
+      return;
+    }
+    this.takeOver();
+    if (g.mode === 'tilt') {
+      this.want.el += (now.my - last.my) * 0.005;
+      this.snap();
+    } else {
+      const anchor = this.groundAt(last.mx, last.my);
+      if (now.d > 0 && last.d > 0) this.want.dist *= last.d / now.d;
+      let da = now.ang - last.ang;
       if (da > Math.PI) da -= Math.PI * 2;
       if (da < -Math.PI) da += Math.PI * 2;
       this.want.az -= da;
-      const upp = this.unitsPerPixel();
-      const dx = mx - L.mx, dy = my - L.my;
-      const s = Math.sin(this.cur.az), c = Math.cos(this.cur.az);
-      this.panBy(-(c * dx) * upp - s * dy * upp, (s * dx) * upp - c * dy * upp);
-      this.userMoved = true;
-      this.follow = null;
+      this.snap();
+      // Pin the ground point between the fingers so zoom and twist happen around them.
+      const moved = anchor && this.groundAt(now.mx, now.my);
+      if (anchor && moved) {
+        this.want.x += anchor.x - moved.x;
+        this.want.z += anchor.z - moved.z;
+        this.snap();
+      }
     }
-    this.lastPinch = { d, a, mx, my };
+    this.two = now;
+  }
+
+  onUp(e, cancelled = false) {
+    const p = this.pointers.get(e.pointerId);
+    if (!p) return;
+    this.pointers.delete(e.pointerId);
+    const g = this.gesture;
+    if (this.pointers.size === 1) {
+      // One finger lifted from a pinch: carry on dragging with the other, no jump.
+      const other = [...this.pointers.values()][0];
+      other.sx = other.x; other.sy = other.y;
+      this.gesture = { kind: 'drag', moved: 99 };
+      return;
+    }
+    if (this.pointers.size > 0) return;
+    this.gesture = null;
+    if (!g) return;
+    if (g.kind !== 'tap' || cancelled) {
+      if (p.onLabel || g.kind === 'two') this.suppressClickUntil = performance.now() + 350;
+      return;
+    }
+    if (performance.now() - p.t > 650) return;
+    // Taps on a label are handled by the label itself.
+    if (p.onLabel) return;
+    const now = performance.now();
+    const last = this.lastTap;
+    if (p.type !== 'mouse' && last && now - last.t < 320 && Math.hypot(last.x - e.clientX, last.y - e.clientY) < 36) {
+      this.lastTap = null;
+      this.takeOver();
+      this.zoomAt(0.5, e.clientX, e.clientY);
+      return;
+    }
+    this.lastTap = { t: now, x: e.clientX, y: e.clientY };
+    if (this.onClick) {
+      const r = this.canvas.getBoundingClientRect();
+      this.onClick(e.clientX - r.left, e.clientY - r.top);
+    }
   }
 
   update(dt) {
@@ -160,7 +300,7 @@ export class CameraRig {
       const tw = this.tween;
       tw.t += dt / tw.d;
       const k = ease(Math.min(1, tw.t));
-      for (const key of ['x', 'z', 'dist', 'az', 'el']) this.want[key] = tw.from[key] + (tw.to[key] - tw.from[key]) * k;
+      for (const key of KEYS) this.want[key] = tw.from[key] + (tw.to[key] - tw.from[key]) * k;
       if (tw.t >= 1) this.tween = null;
     }
     if (this.follow) {
@@ -168,11 +308,12 @@ export class CameraRig {
       if (p) { this.want.x = p.x; this.want.z = p.z; }
       else this.follow = null;
     }
-    const k = 1 - Math.exp(-dt * 10);
-    for (const key of ['x', 'z', 'dist', 'az', 'el']) this.cur[key] += (this.want[key] - this.cur[key]) * k;
-    const { x, z, dist, az, el } = this.cur;
-    const ce = Math.cos(el);
-    this.camera.position.set(x + dist * ce * Math.sin(az), dist * Math.sin(el), z + dist * ce * Math.cos(az));
-    this.camera.lookAt(x, 0, z);
+    if (this.pointers.size) {
+      for (const k of KEYS) this.cur[k] = this.want[k];
+    } else {
+      const k = 1 - Math.exp(-dt * 12);
+      for (const key of KEYS) this.cur[key] += (this.want[key] - this.cur[key]) * k;
+    }
+    this.apply();
   }
 }

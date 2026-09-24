@@ -215,6 +215,15 @@ const app = {
   togglePause: () => { paused = !paused; },
   setSpeed: (n) => { speed = n; },
   setLang: changeLang,
+  canvas: () => (renderer ? renderer.canvas : null),
+  cameraStep: (kind) => {
+    if (!renderer) return;
+    const rig = renderer.rig;
+    if (kind === 'in') rig.zoomStep(0.75);
+    else if (kind === 'out') rig.zoomStep(1 / 0.75);
+    else if (kind === 'left') rig.rotateStep(-0.35);
+    else if (kind === 'right') rig.rotateStep(0.35);
+  },
 };
 
 const ui = createUI(document.getElementById('app'), app);

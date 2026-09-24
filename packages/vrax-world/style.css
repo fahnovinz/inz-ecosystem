@@ -85,7 +85,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; touch-action: pan-x pan-y; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -241,6 +241,8 @@ button, input { font: inherit; color: inherit; }
   isolation: isolate;
   box-shadow: var(--shadow-sm);
   background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom));
+  /* Every touch inside the city belongs to the camera, never to page zoom. */
+  touch-action: none;
 }
 .stage::before {
   content: '';
@@ -266,6 +268,22 @@ button, input { font: inherit; color: inherit; }
 }
 .stage-top > * { pointer-events: auto; }
 .stage-status { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.stage-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.cam-pad {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.cam-pad .btn { width: 34px; height: 34px; border-radius: 0; color: var(--ink-2); touch-action: none; user-select: none; -webkit-user-select: none; }
+.cam-pad .btn:first-child { border-radius: calc(var(--r) - 1px) calc(var(--r) - 1px) 0 0; }
+.cam-pad .btn:last-child { border-radius: 0 0 calc(var(--r) - 1px) calc(var(--r) - 1px); }
+.cam-pad .btn:hover { background: var(--hover); color: var(--ink); }
+.cam-pad .btn:active { background: var(--fill); }
+.cam-pad .btn + .btn { border-top: 1px solid var(--line); }
+.cam-pad .btn:nth-child(3) { border-top-color: var(--line-strong); }
 .chip-box {
   display: flex;
   align-items: center;
@@ -306,6 +324,7 @@ button, input { font: inherit; color: inherit; }
   text-shadow: 0 0 1px #fff, 0 0 2px #fff, 0 0 3px #fff, 0 0 6px rgb(255 255 255 / 0.8);
   cursor: pointer;
   pointer-events: auto;
+  touch-action: none;
   will-change: transform;
   transition: color var(--dur) var(--ease), opacity 0.16s var(--ease);
 }
@@ -411,7 +430,7 @@ button, input { font: inherit; color: inherit; }
 .local-label:hover { color: var(--ink); }
 .send { width: 34px; height: 34px; border-radius: 9px; }
 .send:disabled { opacity: 0.22; }
-.examples { display: flex; justify-content: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.examples { display: flex; justify-content: center; gap: 6px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
 .examples::-webkit-scrollbar { display: none; }
 .examples .chip { box-shadow: var(--shadow-sm); }
 
@@ -503,6 +522,7 @@ kbd { display: inline-block; min-width: 24px; padding: 2px 6px; border: 1px soli
   .chip-box dt .long { display: none; }
   .reset-view span { display: none; }
   .reset-view { width: 40px; padding: 0; }
+  .cam-pad .btn { width: 40px; height: 40px; }
   .lm-label::after { content: ''; position: absolute; inset: -8px -2px; }
   .inspector { top: auto; right: 8px; left: 8px; bottom: 150px; width: auto; }
   .dock { width: calc(100% - 16px); bottom: 8px; gap: 6px; }

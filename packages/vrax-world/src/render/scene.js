@@ -45,8 +45,11 @@ function skyAt(h) {
 }
 
 export function createRenderer(container, world, { onPick, onSky } = {}) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // Phones and tablets get a lighter setup; quality then adapts to the measured frame rate.
+  const coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const maxRatio = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2);
+  const renderer = new THREE.WebGLRenderer({ antialias: !coarse, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(maxRatio);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -67,7 +70,10 @@ export function createRenderer(container, world, { onPick, onSky } = {}) {
   const sun = new THREE.DirectionalLight(0xffffff, 2.5);
   sun.castShadow = true;
   const small = Math.min(window.innerWidth, window.innerHeight) < 700;
-  sun.shadow.mapSize.set(small ? 1536 : 2048, small ? 1536 : 2048);
+  const shadowSize = coarse ? 1024 : small ? 1536 : 2048;
+  sun.shadow.mapSize.set(shadowSize, shadowSize);
+  // On touch devices shadows are redrawn every other frame.
+  if (coarse) renderer.shadowMap.autoUpdate = false;
   const sc = sun.shadow.camera;
   sc.left = -95; sc.right = 95; sc.top = 70; sc.bottom = -70; sc.near = 10; sc.far = 400;
   sun.shadow.bias = -0.0004;
@@ -77,7 +83,7 @@ export function createRenderer(container, world, { onPick, onSky } = {}) {
   const city = buildCity(world, scene);
   const agents = makeAgents(scene);
   const fx = makeFx(scene, city);
-  const rig = new CameraRig(camera, canvas, { onClick: (x, y) => onPick && onPick(pick(x, y)) });
+  const rig = new CameraRig(camera, container, canvas, { onClick: (x, y) => onPick && onPick(pick(x, y)) });
 
   const env = {
     top: new THREE.Color(0xc2dbea), bottom: new THREE.Color(0xedf3f4), hemiSky: new THREE.Color(), hemiGround: new THREE.Color(),
@@ -104,6 +110,30 @@ export function createRenderer(container, world, { onPick, onSky } = {}) {
   }
   new ResizeObserver(resize).observe(container);
   resize();
+
+  // Adaptive resolution: drop the pixel ratio when frames run long, raise it back when there is headroom.
+  const perf = { frames: 0, acc: 0, n: 0, good: 0 };
+  function adapt(realDt) {
+    perf.frames++;
+    if (perf.frames < 90) return;
+    perf.acc += realDt;
+    perf.n++;
+    if (perf.n < 45) return;
+    const avg = perf.acc / perf.n;
+    perf.acc = 0; perf.n = 0;
+    const ratio = renderer.getPixelRatio();
+    if (avg > 0.034 && ratio > 1) {
+      renderer.setPixelRatio(Math.max(1, ratio - 0.25));
+      perf.good = 0;
+      resize();
+    } else if (avg < 0.019 && ratio < maxRatio) {
+      if (++perf.good >= 4) {
+        renderer.setPixelRatio(Math.min(maxRatio, ratio + 0.25));
+        perf.good = 0;
+        resize();
+      }
+    } else perf.good = 0;
+  }
 
   function envTargets(state) {
     const h = hourOf(state.clock);
@@ -251,6 +281,8 @@ export function createRenderer(container, world, { onPick, onSky } = {}) {
 
     agents.update(state, env, time, selection);
     rig.update(realDt);
+    if (!renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = perf.frames % 2 === 0;
+    adapt(realDt);
     renderer.render(scene, camera);
   }
 

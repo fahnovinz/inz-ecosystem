@@ -14,7 +14,11 @@ All notable changes to INZ Ecosystem are documented here.
 - Residents drawn as articulated low-poly figures (walking arms and legs, hair, hijab, peci, kids) in one instanced draw call
 - Drivers stop for pedestrians on zebra crossings; the inspector says why a vehicle is waiting
 
+- Camera: the view follows fingers and the mouse exactly, drags keep the ground under the pointer, zoom centres on the cursor or between the fingers, two-finger tilt, double-tap zoom, and on-screen zoom and turn buttons
+- Phones and tablets render without MSAA at up to 1.5× resolution, with smaller shadow maps redrawn every other frame; resolution adapts to the measured frame rate
+
 ### Fixed
+- Pinch and twist failing on phones when a finger landed on a place label, and pinches outside the city zooming the whole page
 - Gridlock in VRAX World traffic: cars at right angles or side by side no longer wait on each other forever, and long-stuck drivers edge through junction knots
 
 ## [0.3.2] — 2026-07-31

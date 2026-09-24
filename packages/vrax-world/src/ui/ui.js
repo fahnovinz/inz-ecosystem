@@ -32,6 +32,10 @@ const I = {
   fire: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22c4 0 7-2.8 7-7 0-4-3-6.5-4-10-2 2-3 3.5-3 6-1.2-1-2-2.3-2-4C7.5 9.5 5 12 5 15c0 4.2 3 7 7 7z"/></svg>',
   water: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
   follow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+  turnLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 3.5v5h5"/></svg>',
+  turnRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7L20 8.5"/><path d="M20 3.5v5h-5"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
 };
 const W_ICON = {
@@ -116,7 +120,15 @@ function template() {
         </dl>
         <div class="chip-box clock" data-clock></div>
       </div>
-      <button type="button" class="btn btn-outline btn-text reset-view tip-end" data-act="view" data-i18n-tip="ui.resetViewTip">${I.target}<span data-i18n="ui.resetView"></span></button>
+      <div class="stage-side">
+        <button type="button" class="btn btn-outline btn-text reset-view tip-end" data-act="view" data-i18n-tip="ui.resetViewTip">${I.target}<span data-i18n="ui.resetView"></span></button>
+        <div class="cam-pad" role="group" data-i18n-label="ui.camera">
+          <button type="button" class="btn btn-icon tip-end" data-cam="in" data-i18n-tip="ui.zoomIn" data-i18n-label="ui.zoomIn">${I.plus}</button>
+          <button type="button" class="btn btn-icon tip-end" data-cam="out" data-i18n-tip="ui.zoomOut" data-i18n-label="ui.zoomOut">${I.minus}</button>
+          <button type="button" class="btn btn-icon tip-end" data-cam="left" data-i18n-tip="ui.turnLeft" data-i18n-label="ui.turnLeft">${I.turnLeft}</button>
+          <button type="button" class="btn btn-icon tip-end" data-cam="right" data-i18n-tip="ui.turnRight" data-i18n-label="ui.turnRight">${I.turnRight}</button>
+        </div>
+      </div>
     </div>
     <div class="lm-layer" data-labels></div>
     <section class="card inspector" data-inspector hidden aria-live="polite"></section>
@@ -245,7 +257,23 @@ export function createUI(root, app) {
     sheetRoot.querySelector('[data-act="showcase-sheet"]').onclick = () => { close(); app.toggleShowcase(); };
   }
 
+  // Camera buttons: a press steps once, holding keeps going.
+  let camTimer = null;
+  const camStop = () => { clearInterval(camTimer); camTimer = null; };
+  root.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-cam]');
+    if (!b || e.button > 0) return;
+    e.preventDefault();
+    camStop();
+    app.cameraStep(b.dataset.cam);
+    camTimer = setInterval(() => app.cameraStep(b.dataset.cam), 160);
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) root.addEventListener(ev, camStop);
+  window.addEventListener('blur', camStop);
+
   root.addEventListener('click', (e) => {
+    const cam = e.target.closest('[data-cam]');
+    if (cam) { if (e.detail === 0) app.cameraStep(cam.dataset.cam); return; }
     const sp = e.target.closest('[data-speed]');
     if (sp) { app.setSpeed(Number(sp.dataset.speed)); refreshControls(); return; }
     const b = e.target.closest('[data-act]');
@@ -610,6 +638,11 @@ export function createUI(root, app) {
     else if (e.key === 'c' || e.key === 'C') toggleCinema();
     else if (e.key === '/') { e.preventDefault(); input.focus(); }
     else if (e.key === '?') { e.preventDefault(); openHelp(); }
+    else if (e.target !== app.canvas()) {
+      const cam = { '+': 'in', '=': 'in', '-': 'out', _: 'out', '[': 'left', ']': 'right' }[e.key];
+      if (cam) { e.preventDefault(); app.cameraStep(cam); }
+      else if (e.key === '0') app.resetView();
+    }
   });
 
   // ---- Per-frame and periodic updates -------------------------------------------------

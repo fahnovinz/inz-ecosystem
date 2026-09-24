@@ -72,11 +72,13 @@ Traffic keeps left, as in Indonesia. Motorbikes, taxis and the TransVrax bus loo
 ## Controls
 
 - **Click** a person, vehicle, building or place name to see what it is doing and what you can do with it.
-- **Drag** to pan, **scroll** or **pinch** to zoom, **right-drag** or **two-finger twist** to turn.
+- **Phone:** drag to move, pinch to zoom, twist two fingers to turn, drag two fingers up or down to tilt, double-tap to zoom in. Gestures also work when a finger lands on a place label.
+- **Mouse:** drag to move, scroll to zoom at the cursor, right-drag (or Shift-drag) to turn and tilt.
+- **Buttons** under Reset view zoom and turn the camera; hold them to keep going.
 - **City settings** hold weather, river level, time of day, season and the day cycle.
 - **Undo** restores the whole city, including randomness, to the moment before your last change.
 - **Play showcase** runs a 40-second guided tour and puts everything back afterwards.
-- Keyboard: `Space` pause, `Z` undo, `C` cinema mode, `/` type a command, `↑ ↓` command history, `?` help, `Esc` close.
+- Keyboard: `Space` pause, `Z` undo, `C` cinema mode, `/` type a command, `↑ ↓` command history, `+ −` zoom, `[ ]` turn, `0` reset view, `?` help, `Esc` close.
 
 ## How it is built
 
