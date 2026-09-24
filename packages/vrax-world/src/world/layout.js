@@ -2,16 +2,34 @@
 // Units are metres. +x points east, +z points south, y is up.
 // Traffic drives on the left, as it does in Indonesia.
 
-export const HALF_W = 74;
-export const HALF_D = 46;
-export const ROAD_HALF = 3.5;
-export const SIDEWALK = 2;
-export const LANE_OFFSET = 1.75;
-export const VX = [-50, -24, 24, 50];
-export const HZ = [-25, 0, 25];
-export const RIVER_HALF = 7;
-export const RIVERSIDE_X = 24;
-export const BRIDGE_Z = { north: -25, south: 25 };
+// Cross-section, west to east (mirrored about the river) and north to south:
+//   slab edge | outer lot | road | inner lot | riverside road | strip | river
+// Every road has two lanes each way. Lots keep the sizes the buildings were
+// designed for; sidewalks and roads set everything else.
+export const LANE = 3.5;
+export const LANES = 2; // per direction
+export const ROAD_HALF = LANE * LANES;
+export const SIDEWALK = 3;
+export const EDGE = 1.5; // margin between a lot and the slab edge
+export const CROSSWALK = 3;
+export const LANE_OFFSET = LANE / 2; // centre of the inner lane
+export const RIVER_HALF = 8;
+export const STRIP_W = 14;
+
+const LOT = { outerW: 17.5, innerW: 15, outerD: 14.5, innerD: 14 };
+const W_INNER = SIDEWALK + LOT.innerW + SIDEWALK;
+const W_OUTER = SIDEWALK + LOT.outerW + EDGE;
+const D_INNER = SIDEWALK + LOT.innerD + SIDEWALK;
+const D_OUTER = SIDEWALK + LOT.outerD + EDGE;
+
+export const RIVERSIDE_X = RIVER_HALF + STRIP_W + ROAD_HALF;
+const OUTER_X = RIVERSIDE_X + ROAD_HALF + W_INNER + ROAD_HALF;
+export const HALF_W = OUTER_X + ROAD_HALF + W_OUTER;
+export const VX = [-OUTER_X, -RIVERSIDE_X, RIVERSIDE_X, OUTER_X];
+const MID_Z = ROAD_HALF + D_INNER + ROAD_HALF;
+export const HALF_D = MID_Z + ROAD_HALF + D_OUTER;
+export const HZ = [-MID_Z, 0, MID_Z];
+export const BRIDGE_Z = { north: -MID_Z, south: MID_Z };
 
 // River level is measured in metres relative to normal.
 export const WATER_BASE = -2.0;
@@ -22,21 +40,48 @@ export const BOAT_AGROUND = -0.7; // below this boats touch the riverbed
 export const FLOOD_STRIPS = 1.8; // riverside park, parking, pier and warung go under
 export const FLOOD_ROADS = 2.2; // riverside roads and bridge approaches go under
 
-export const COLUMNS = { W2: [-74, -53.5], W1: [-46.5, -27.5], E1: [27.5, 46.5], E2: [53.5, 74] };
-export const ROWS = { N2: [-46, -28.5], N1: [-21.5, -3.5], S1: [3.5, 21.5], S2: [28.5, 46] };
+const colX0 = RIVERSIDE_X + ROAD_HALF;
+export const COLUMNS = {
+  W2: [-HALF_W, -OUTER_X - ROAD_HALF], W1: [-OUTER_X + ROAD_HALF, -colX0],
+  E1: [colX0, OUTER_X - ROAD_HALF], E2: [OUTER_X + ROAD_HALF, HALF_W],
+};
+export const ROWS = {
+  N2: [-HALF_D, -MID_Z - ROAD_HALF], N1: [-MID_Z + ROAD_HALF, -ROAD_HALF],
+  S1: [ROAD_HALF, MID_Z - ROAD_HALF], S2: [MID_Z + ROAD_HALF, HALF_D],
+};
 
 // Land between the riverside roads and the river.
+const SX0 = RIVER_HALF, SX1 = RIVER_HALF + STRIP_W;
+const SZ = { n: [-HALF_D, -MID_Z - ROAD_HALF], c: [-MID_Z + ROAD_HALF, MID_Z - ROAD_HALF], s: [MID_Z + ROAD_HALF, HALF_D] };
 export const STRIPS = [
-  { id: 'garden-nw', kind: 'garden', x0: -20.5, x1: -7, z0: -46, z1: -28.5 },
-  { id: 'park', kind: 'park', x0: -20.5, x1: -7, z0: -21.5, z1: 21.5 },
-  { id: 'pier', kind: 'pier', x0: -20.5, x1: -7, z0: 28.5, z1: 46 },
-  { id: 'garden-ne', kind: 'garden', x0: 7, x1: 20.5, z0: -46, z1: -28.5 },
-  { id: 'parking', kind: 'parking', x0: 7, x1: 20.5, z0: -21.5, z1: 21.5 },
-  { id: 'warung', kind: 'warung', x0: 7, x1: 20.5, z0: 28.5, z1: 46 },
+  { id: 'garden-nw', kind: 'garden', x0: -SX1, x1: -SX0, z0: SZ.n[0], z1: SZ.n[1] },
+  { id: 'park', kind: 'park', x0: -SX1, x1: -SX0, z0: SZ.c[0], z1: SZ.c[1] },
+  { id: 'pier', kind: 'pier', x0: -SX1, x1: -SX0, z0: SZ.s[0], z1: SZ.s[1] },
+  { id: 'garden-ne', kind: 'garden', x0: SX0, x1: SX1, z0: SZ.n[0], z1: SZ.n[1] },
+  { id: 'parking', kind: 'parking', x0: SX0, x1: SX1, z0: SZ.c[0], z1: SZ.c[1] },
+  { id: 'warung', kind: 'warung', x0: SX0, x1: SX1, z0: SZ.s[0], z1: SZ.s[1] },
 ];
+export const strip = (id) => STRIPS.find((s) => s.id === id);
 
-export const PENDOPO = { x: -13.75, z: 0, half: 3.2 };
-export const PARKING_ENTRY_Z = -8;
+// Usable ground of a strip: without the sidewalk along the riverside road.
+export function stripInner(s) {
+  const west = s.x0 < 0;
+  return { x0: west ? s.x0 + SIDEWALK : s.x0, x1: west ? s.x1 : s.x1 - SIDEWALK, z0: s.z0, z1: s.z1 };
+}
+
+const PARK = stripInner(strip('park'));
+export const PENDOPO = { x: (PARK.x0 + PARK.x1) / 2, z: 0, half: 3.2 };
+
+// Riverside Parking: two rows of stalls either side of one aisle, entered from the riverside road.
+const LOTP = stripInner(strip('parking'));
+export const PARKING = {
+  entryZ: -8,
+  aisleX: (LOTP.x0 + LOTP.x1) / 2,
+  gateX: LOTP.x1 + 0.5,
+  rows: [LOTP.x0 + 2.4, LOTP.x1 - 2.4],
+  z0: LOTP.z0 + 3, z1: LOTP.z1 - 3,
+};
+export const PARKING_ENTRY_Z = PARKING.entryZ;
 
 export const WALL = {
   cream: 0xefe4cc, sand: 0xe3d0a8, white: 0xf1efe9, stone: 0xe4ddcd, rose: 0xe8b9a9,
@@ -125,17 +170,18 @@ export const VISIT = {
 export const WORKPLACES = ['school', 'police', 'market', 'bank', 'cafe', 'ruko', 'hospital', 'fire', 'tower', 'hotel', 'office', 'cinema', 'shop', 'warehouse', 'workshop'];
 
 // Labelled places. anchor is the label's 3D position; target is what "this" refers to.
+const center = (s) => [(s.x0 + s.x1) / 2, (s.z0 + s.z1) / 2];
 export const LANDMARKS = [
   { id: 'vrax-tower', key: 'b.tower', building: 'vrax-tower' },
   { id: 'bank', key: 'b.bank', building: 'bank' },
-  { id: 'park', key: 'lm.park', at: [-13.75, 3, -9] },
-  { id: 'bridge-north', key: 'lm.bridgeNorth', at: [0, 3.5, -25] },
-  { id: 'bridge-south', key: 'lm.bridgeSouth', at: [0, 3.5, 25] },
-  { id: 'parking', key: 'lm.parking', at: [13.75, 2.5, -2] },
+  { id: 'park', key: 'lm.park', at: [PENDOPO.x, 3, -12] },
+  { id: 'bridge-north', key: 'lm.bridgeNorth', at: [0, 3.5, BRIDGE_Z.north] },
+  { id: 'bridge-south', key: 'lm.bridgeSouth', at: [0, 3.5, BRIDGE_Z.south] },
+  { id: 'parking', key: 'lm.parking', at: [PARKING.aisleX, 2.5, -2] },
   { id: 'market', key: 'b.market', building: 'market' },
   { id: 'fire-station', key: 'b.fire', building: 'fire-station' },
   { id: 'police', key: 'b.police', building: 'police' },
-  { id: 'warung', key: 'lm.warung', at: [13.75, 3, 37] },
+  { id: 'warung', key: 'lm.warung', at: [center(strip('warung'))[0], 3, center(strip('warung'))[1]] },
   { id: 'school', key: 'b.school', building: 'school' },
   { id: 'warehouse', key: 'b.warehouse', building: 'warehouse' },
 ];

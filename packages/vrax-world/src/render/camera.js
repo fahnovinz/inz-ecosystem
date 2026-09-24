@@ -6,10 +6,12 @@
 // buttons and fly-tos ease in.
 
 import * as THREE from 'three';
+import { HALF_W, HALF_D } from '../world/layout.js';
 
-const DEFAULT = { x: 2, z: 3, dist: 262, az: 0.36, el: 0.76 };
+// Default framing scales with the size of the city.
+const DEFAULT = { x: 2, z: 4, dist: HALF_W * 3.54, az: 0.36, el: 0.76 };
 const MIN_DIST = 20;
-const MAX_DIST = 360;
+const MAX_DIST = HALF_W * 4.9;
 const KEYS = ['x', 'z', 'dist', 'az', 'el'];
 // Interface on top of the city that keeps its own touches. Landmark labels are not
 // listed: a drag that starts on a label still moves the view.
@@ -64,8 +66,8 @@ export class CameraRig {
 
   clamp() {
     const w = this.want;
-    w.x = Math.max(-72, Math.min(72, w.x));
-    w.z = Math.max(-46, Math.min(46, w.z));
+    w.x = Math.max(-HALF_W + 2, Math.min(HALF_W - 2, w.x));
+    w.z = Math.max(-HALF_D, Math.min(HALF_D, w.z));
     w.dist = Math.min(MAX_DIST, Math.max(MIN_DIST, w.dist));
     w.el = Math.max(0.3, Math.min(1.36, w.el));
   }

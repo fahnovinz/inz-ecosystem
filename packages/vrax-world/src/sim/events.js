@@ -1,12 +1,12 @@
 // Emergencies and happenings: fires, the bank robbery, festival crowds and boats.
 
 import { range, pick, chance, rand } from './rng.js';
-import { buildPolyline, routeNodes } from './roads.js';
+import { routeNodes } from './roads.js';
 import { cellIndex } from './nav.js';
 import { edgeBlocked, edgeCost, isWet, pedBlocked, flood2 } from './common.js';
-import { makeVehicle, replan, setBarrier, setPlan, sendHome, currentSeg } from './vehicles.js';
+import { makeVehicle, replan, setBarrier, setPlan, sendHome, currentSeg, lanePoly, OUTER } from './vehicles.js';
 import { startTrip, redirect, homePlan } from './people.js';
-import { BOAT_CLEARANCE, BOAT_AGROUND, BRIDGE_Z, LANE_OFFSET, PENDOPO } from '../world/layout.js';
+import { BOAT_CLEARANCE, BOAT_AGROUND, BRIDGE_Z, PENDOPO, HALF_W, HALF_D, RIVER_HALF, ROAD_HALF, SIDEWALK, strip } from '../world/layout.js';
 
 // ---- Fire ------------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ export function dispatchTrucks(state, world, fire, n = 2) {
       const out = g.nodes[station].out[0];
       nodes = [station, g.edges[out].b];
     }
-    setPlan(v, buildPolyline(g, nodes));
+    setPlan(v, lanePoly(g, v, nodes));
     if (stuck) setBarrier(state, world, v);
     v.st = 'hold';
     v.until = state.t + 2 + i * 2.2;
@@ -150,9 +150,10 @@ export function startRobbery(state, world, ctx) {
   // Getaway car waits at the curb on the bank's side, pointing north.
   const car = makeVehicle(state, 'getaway', 'getaway');
   const ahead = g.nodes.find((n) => Math.abs(n.x - node.x) < 0.1 && Math.abs(n.z) < 0.1);
-  const start = [node.x - LANE_OFFSET, node.z + 2];
+  car.laneOff = OUTER; // parked at the curb
+  const start = [node.x - car.laneOff, node.z + 2];
   const firstPath = ahead ? [bankNode, ahead.id] : [bankNode, g.edges[g.nodes[bankNode].out[0]].b];
-  setPlan(car, buildPolyline(g, firstPath, { start }));
+  setPlan(car, lanePoly(g, car, firstPath, { start }));
   car.st = 'hold';
   car.hd = Math.PI;
   state.vehicles.push(car);
@@ -192,12 +193,15 @@ function robberyExit(state, world, fromNode) {
 }
 
 function nearestPlace(world, x, z) {
+  const b = (id) => world.buildings[world.buildingIndex[id]];
+  const at = (key, p) => ({ key, x: p.cx ?? p.x, z: p.cz ?? p.z });
+  const mid = (s) => ({ x: (s.x0 + s.x1) / 2, z: (s.z0 + s.z1) / 2 });
   const places = [
-    { key: 'lm.bridgeNorth', x: 0, z: BRIDGE_Z.north }, { key: 'lm.bridgeSouth', x: 0, z: BRIDGE_Z.south },
-    { key: 'lm.park', x: -14, z: 0 }, { key: 'b.bank', x: -39, z: 10 }, { key: 'b.market', x: -37, z: -12 },
-    { key: 'b.tower', x: 37, z: -12 }, { key: 'b.hospital', x: -66, z: 36 }, { key: 'b.school', x: -66, z: -40 },
-    { key: 'b.warehouse', x: 62, z: 12 }, { key: 'lm.parking', x: 14, z: 0 }, { key: 'b.cinema', x: 35, z: 11 },
-    { key: 'road.west', x: -70, z: 0 }, { key: 'road.east', x: 70, z: 0 },
+    at('lm.bridgeNorth', { x: 0, z: BRIDGE_Z.north }), at('lm.bridgeSouth', { x: 0, z: BRIDGE_Z.south }),
+    at('lm.park', mid(strip('park'))), at('lm.parking', mid(strip('parking'))),
+    at('b.bank', b('bank')), at('b.market', b('market')), at('b.tower', b('vrax-tower')), at('b.hospital', b('hospital')),
+    at('b.school', b('school')), at('b.warehouse', b('warehouse')), at('b.cinema', b('cinema')),
+    at('road.west', { x: -HALF_W + 4, z: 0 }), at('road.east', { x: HALF_W - 4, z: 0 }),
   ];
   let best = places[0], bd = Infinity;
   for (const p of places) {
@@ -222,7 +226,7 @@ function robberyStep(state, world, dt, ctx, emit) {
       const v = makeVehicle(state, 'police', 'police');
       const target = g.poiNode.bank;
       const path = routeNodes(g, station, target, edgeBlocked(state), edgeCost(state)) || [station, g.edges[g.nodes[station].out[0]].b];
-      setPlan(v, buildPolyline(g, path));
+      setPlan(v, lanePoly(g, v, path));
       v.goal = { k: 'chase', node: target };
       v.st = 'hold';
       v.until = state.t + i * 1.6;
@@ -262,7 +266,7 @@ function robberyStep(state, world, dt, ctx, emit) {
       const back = routeNodes(g, entry, from, edgeBlocked(state), edgeCost(state));
       if (back && back.length > 1) {
         const v = makeVehicle(state, 'police', 'police');
-        setPlan(v, buildPolyline(g, back));
+        setPlan(v, lanePoly(g, v, back));
         v.goal = { k: 'chase', node: from };
         state.vehicles.push(v);
         rob.police.push(v.id);
@@ -348,9 +352,9 @@ export function festivalCrowd(state, world, ctx, n) {
 
 export function makeBoats(state) {
   state.boats = [
-    { id: 1, x: -3, z: -30, dir: 1, v: 0, color: 0xf4f1de },
-    { id: 2, x: 3, z: 18, dir: -1, v: 0, color: 0xe76f51 },
-    { id: 3, x: -2.5, z: 40, dir: -1, v: 0, color: 0x2a9d8f },
+    { id: 1, x: -3, z: -HALF_D * 0.65, dir: 1, v: 0, color: 0xf4f1de },
+    { id: 2, x: 3, z: HALF_D * 0.3, dir: -1, v: 0, color: 0xe76f51 },
+    { id: 3, x: -3, z: HALF_D * 0.85, dir: -1, v: 0, color: 0x2a9d8f },
   ];
 }
 
@@ -363,15 +367,17 @@ function boatsStep(state, dt) {
     if (level >= BOAT_CLEARANCE) {
       for (const bz of [BRIDGE_Z.north, BRIDGE_Z.south]) {
         const ahead = (bz - b.z) * b.dir;
-        if (ahead > 0 && ahead < 10) { target = Math.min(target, Math.max(0, (ahead - 7) * 0.8)); b.st = 'wait'; }
+        const deck = ROAD_HALF + SIDEWALK;
+        if (ahead > 0 && ahead < deck + 4) { target = Math.min(target, Math.max(0, (ahead - deck - 1) * 0.8)); b.st = 'wait'; }
       }
     }
     b.v += Math.max(-2 * dt, Math.min(0.8 * dt, target - b.v));
     b.z += b.v * b.dir * dt;
-    if (b.z > 42) { b.z = 42; b.dir = -1; }
-    if (b.z < -42) { b.z = -42; b.dir = 1; }
+    const end = HALF_D - 4;
+    if (b.z > end) { b.z = end; b.dir = -1; }
+    if (b.z < -end) { b.z = -end; b.dir = 1; }
     // Keep left in the river too.
-    const lane = b.dir > 0 ? 3 : -3;
+    const lane = (b.dir > 0 ? 1 : -1) * RIVER_HALF * 0.4;
     b.x += (lane - b.x) * Math.min(1, dt * 0.5);
   }
 }

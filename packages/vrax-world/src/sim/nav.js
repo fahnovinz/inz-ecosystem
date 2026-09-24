@@ -93,7 +93,7 @@ export function makePathfinder(grid) {
     return isOpenType(type[idx]) && !(blocked && blocked(idx));
   }
 
-  function find(start, goal, blocked, maxExpand = 16000) {
+  function find(start, goal, blocked, maxExpand = 30000) {
     if (start < 0 || goal < 0) return null;
     if (start === goal) return [start];
     gen++;

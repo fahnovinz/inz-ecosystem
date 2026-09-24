@@ -28,7 +28,7 @@ export function makePerson(state, world, home) {
     clothes: pick(r, CLOTHES), skin: pick(r, SKIN), umbColor: pick(r, UMBRELLAS), hasUmb: chance(r, 0.72),
     st: 'in', at: home, x: b.door.x, z: b.door.z, hd: 0, path: null, wi: 0,
     spd: range(r, 1.15, 1.5), purp: 'home', dest: null, stay: 0, until: 0,
-    lat: range(r, -0.55, 0.55), repath: false, unreach: 0, worked: -1, face: null,
+    lat: range(r, -0.95, 0.95), repath: false, unreach: 0, worked: -1, face: null,
   };
 }
 
@@ -45,7 +45,7 @@ function spot(state, world, area) {
       let face = null;
       if (area === 'festival') face = [PENDOPO.x, PENDOPO.z];
       if (area === 'tower') { const t = world.buildings[world.buildingIndex['vrax-tower']]; face = [t.cx, t.cz]; }
-      if (area === 'warung') face = [10.2, s[1]];
+      if (area === 'warung') face = [world.kiosks[0].x, s[1]];
       return { k: 's', x: s[0], z: s[1], area, face };
     }
   }

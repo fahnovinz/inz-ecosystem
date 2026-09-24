@@ -2,12 +2,14 @@
 // notices, the inspector card, settings and the help dialog.
 
 import { t, getLang, formatClock, formatLevel } from '../i18n.js';
-import { LANDMARKS, RIVER_MIN, RIVER_MAX } from '../world/layout.js';
+import { LANDMARKS, RIVER_MIN, RIVER_MAX, strip } from '../world/layout.js';
 import { outdoorCount } from '../sim/people.js';
 import { waitingCount, unreachableCount } from '../sim/vehicles.js';
 import { periodOf, burning } from '../sim/common.js';
 import { starsDataURL } from '../render/materials.js';
 import { describeNotice, describeEvent, suggestions, describePerson, describeVehicle, describeBuilding, buildingName } from './describe.js';
+
+const PARK = strip('park');
 
 const I = {
   pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
@@ -580,7 +582,7 @@ export function createUI(root, app) {
       } else if (id === 'park') {
         title = t('lm.park');
         if (s.festival.on) badge = { text: 'Fest', tone: 'info' };
-        lines.push(t('insp.inPark', { n: s.people.filter((p) => (p.st === 'idle' || p.st === 'walk') && p.x > -20.5 && p.x < -7 && Math.abs(p.z) < 21.5).length }));
+        lines.push(t('insp.inPark', { n: s.people.filter((p) => (p.st === 'idle' || p.st === 'walk') && p.x > PARK.x0 && p.x < PARK.x1 && p.z > PARK.z0 && p.z < PARK.z1).length }));
         actions.push(s.festival.on ? ['festOff', I.place, t('act.festOff')] : ['festOn', I.place, t('act.festOn')]);
       } else if (id === 'warung') {
         title = t('lm.warung');

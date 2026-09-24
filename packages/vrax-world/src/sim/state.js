@@ -84,7 +84,7 @@ export function createState(world, seed = 7) {
     v.v = v.vmax * 0.7;
     while (v.zi < v.zones.length && v.s > v.zones[v.zi].s0 - 1) v.zi++;
     if (v.zi > 0 && v.s < v.zones[v.zi - 1].s1) { state.vehicles.pop(); continue; }
-    const clash = state.vehicles.some((o) => o !== v && Math.hypot(o.x - v.x, o.z - v.z) < 8);
+    const clash = state.vehicles.some((o) => o !== v && Math.hypot(o.x - v.x, o.z - v.z) < 6);
     if (clash) state.vehicles.pop();
   }
   // Some cars already parked by the river.

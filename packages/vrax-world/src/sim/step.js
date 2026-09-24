@@ -1,7 +1,7 @@
 // One fixed simulation tick.
 
 import { peopleStep } from './people.js';
-import { vehiclesStep } from './vehicles.js';
+import { vehiclesStep, pruneClaims } from './vehicles.js';
 import { eventsStep } from './events.js';
 import { emitter } from './common.js';
 
@@ -19,9 +19,6 @@ export function step(state, world, dt = TICK, emit = null) {
   eventsStep(state, world, dt, ctx, e);
   peopleStep(state, world, dt, ctx);
   vehiclesStep(state, world, dt, ctx);
-  // Claims left behind by vehicles that no longer exist.
-  if (Math.floor(state.t) !== Math.floor(state.t - dt)) {
-    const alive = new Set(state.vehicles.map((v) => v.id));
-    for (const k of Object.keys(state.claims)) if (!alive.has(state.claims[k].id)) delete state.claims[k];
-  }
+  // Junction reservations left behind by vehicles that are gone or stuck elsewhere.
+  if (Math.floor(state.t) !== Math.floor(state.t - dt)) pruneClaims(state);
 }

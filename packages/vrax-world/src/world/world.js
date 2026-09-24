@@ -6,6 +6,9 @@ import { createGrid, fillRect, makePathfinder, cellIndex, cellX, cellZ, T, R, GW
 import { buildRoadGraph } from '../sim/roads.js';
 import { makeRng, rand } from '../sim/rng.js';
 
+// Mid-block zebra crossings on the riverside roads, so the park is easy to reach.
+export const MIDBLOCK_Z = [-14, 14];
+
 export const AREA = {
   NONE: 0, PARK: 1, MARKET: 2, TOWER: 3, WARUNG: 4, PIER: 5, GARDEN: 6, PARKING: 7, SCHOOL: 8,
 };
@@ -16,10 +19,10 @@ export function buildWorld() {
     for (const [rid, [z0, z1]] of Object.entries(L.ROWS)) {
       const sides = { w: x0 > -L.HALF_W, e: x1 < L.HALF_W, n: z0 > -L.HALF_D, s: z1 < L.HALF_D };
       const lot = {
-        x0: x0 + (sides.w ? L.SIDEWALK : 1),
-        x1: x1 - (sides.e ? L.SIDEWALK : 1),
-        z0: z0 + (sides.n ? L.SIDEWALK : 1),
-        z1: z1 - (sides.s ? L.SIDEWALK : 1),
+        x0: x0 + (sides.w ? L.SIDEWALK : L.EDGE),
+        x1: x1 - (sides.e ? L.SIDEWALK : L.EDGE),
+        z0: z0 + (sides.n ? L.SIDEWALK : L.EDGE),
+        z1: z1 - (sides.s ? L.SIDEWALK : L.EDGE),
       };
       blocks.push({ id: cid + rid, x0, x1, z0, z1, sides, lot });
     }
@@ -74,15 +77,16 @@ export function buildWorld() {
     for (const hz of L.HZ) {
       const arms = [
         ['n', true], ['s', true],
-        ['e', hasH(hz, vx + 5)], ['w', hasH(hz, vx - 5)],
+        ['e', hasH(hz, vx + L.ROAD_HALF + 1)], ['w', hasH(hz, vx - L.ROAD_HALF - 1)],
       ];
       for (const [side, ok] of arms) {
         if (!ok) continue;
         let r;
-        if (side === 'n') r = [vx - L.ROAD_HALF, hz - L.ROAD_HALF - 2, vx + L.ROAD_HALF, hz - L.ROAD_HALF];
-        if (side === 's') r = [vx - L.ROAD_HALF, hz + L.ROAD_HALF, vx + L.ROAD_HALF, hz + L.ROAD_HALF + 2];
-        if (side === 'e') r = [vx + L.ROAD_HALF, hz - L.ROAD_HALF, vx + L.ROAD_HALF + 2, hz + L.ROAD_HALF];
-        if (side === 'w') r = [vx - L.ROAD_HALF - 2, hz - L.ROAD_HALF, vx - L.ROAD_HALF, hz + L.ROAD_HALF];
+        const cw = L.CROSSWALK;
+        if (side === 'n') r = [vx - L.ROAD_HALF, hz - L.ROAD_HALF - cw, vx + L.ROAD_HALF, hz - L.ROAD_HALF];
+        if (side === 's') r = [vx - L.ROAD_HALF, hz + L.ROAD_HALF, vx + L.ROAD_HALF, hz + L.ROAD_HALF + cw];
+        if (side === 'e') r = [vx + L.ROAD_HALF, hz - L.ROAD_HALF, vx + L.ROAD_HALF + cw, hz + L.ROAD_HALF];
+        if (side === 'w') r = [vx - L.ROAD_HALF - cw, hz - L.ROAD_HALF, vx - L.ROAD_HALF, hz + L.ROAD_HALF];
         fillRect(grid.type, r[0], r[1], r[2], r[3], T.CROSS);
         if (Math.abs(vx) === L.RIVERSIDE_X && (side === 'n' || side === 's')) fillRect(grid.region, r[0], r[1], r[2], r[3], R.RIVERROAD);
         if (Math.abs(vx) === L.RIVERSIDE_X && (side === 'e' || side === 'w') && Math.abs(hz) > 1) {
@@ -94,9 +98,10 @@ export function buildWorld() {
   }
   // Mid-block crossings on the riverside roads so the park is easy to reach.
   for (const x of [-L.RIVERSIDE_X, L.RIVERSIDE_X]) {
-    for (const z of [-12.5, 12.5]) {
-      fillRect(grid.type, x - L.ROAD_HALF, z - 1, x + L.ROAD_HALF, z + 1, T.CROSS);
-      fillRect(grid.region, x - L.ROAD_HALF, z - 1, x + L.ROAD_HALF, z + 1, R.RIVERROAD);
+    for (const z of MIDBLOCK_Z) {
+      const h = L.CROSSWALK / 2;
+      fillRect(grid.type, x - L.ROAD_HALF, z - h, x + L.ROAD_HALF, z + h, T.CROSS);
+      fillRect(grid.region, x - L.ROAD_HALF, z - h, x + L.ROAD_HALF, z + h, R.RIVERROAD);
     }
   }
   // Buildings and fixed obstacles.
@@ -115,13 +120,16 @@ export function buildWorld() {
   fillRect(grid.type, L.PENDOPO.x - L.PENDOPO.half, L.PENDOPO.z - L.PENDOPO.half, L.PENDOPO.x + L.PENDOPO.half, L.PENDOPO.z + L.PENDOPO.half, T.BLOCK);
   // Warung kiosks along the river side of the warung strip.
   const kiosks = [];
+  const war = L.strip('warung');
   for (let i = 0; i < 5; i++) {
-    const z = 31.5 + i * 3.1;
-    kiosks.push({ x: 10.2, z, w: 2.6, d: 2.4 });
-    fillRect(grid.type, 9, z - 1.2, 11.5, z + 1.2, T.BLOCK);
+    const z = war.z0 + 3.5 + i * 3.1;
+    const x = war.x0 + 2.4;
+    kiosks.push({ x, z, w: 2.6, d: 2.4 });
+    fillRect(grid.type, x - 1.3, z - 1.2, x + 1.3, z + 1.2, T.BLOCK);
   }
   // Pier boathouse.
-  const boathouse = { x0: -18, x1: -12.5, z0: 38, z1: 44 };
+  const pierIn = L.stripInner(L.strip('pier'));
+  const boathouse = { x0: pierIn.x0 + 1, x1: pierIn.x0 + 6.5, z0: pierIn.z1 - 9, z1: pierIn.z1 - 3 };
   fillRect(grid.type, boathouse.x0, boathouse.z0, boathouse.x1, boathouse.z1, T.BLOCK);
 
   const pf = makePathfinder(grid);
@@ -153,11 +161,10 @@ export function buildWorld() {
 
   // ---- Parking stalls ----------------------------------------------------------
   const parkingSpots = [];
-  for (let i = 0; i < 12; i++) {
-    const z = -18 + i * 2.9;
-    if (Math.abs(z - L.PARKING_ENTRY_Z) < 2) continue;
-    parkingSpots.push({ x: 10.2, z, side: -1 });
-    parkingSpots.push({ x: 16.8, z, side: 1 });
+  for (let z = L.PARKING.z0; z <= L.PARKING.z1; z += 2.9) {
+    if (Math.abs(z - L.PARKING.entryZ) < 2.4) continue;
+    parkingSpots.push({ x: L.PARKING.rows[0], z, side: -1 });
+    parkingSpots.push({ x: L.PARKING.rows[1], z, side: 1 });
   }
 
   // ---- Exits and bus loop ----------------------------------------------------
@@ -165,10 +172,10 @@ export function buildWorld() {
   for (const id of roads.ends) (roads.nodes[id].x < 0 ? exits.west : exits.east).push(id);
   const nodeAt = (x, z) => roads.nodes.find((n) => Math.abs(n.x - x) < 0.1 && Math.abs(n.z - z) < 0.1).id;
   const busLoop = [
-    nodeAt(-50, -25), nodeAt(-24, -25), nodeAt(24, -25), nodeAt(50, -25),
-    nodeAt(50, 25), nodeAt(24, 25), nodeAt(-24, 25), nodeAt(-50, 25),
+    nodeAt(L.VX[0], L.HZ[0]), nodeAt(L.VX[1], L.HZ[0]), nodeAt(L.VX[2], L.HZ[0]), nodeAt(L.VX[3], L.HZ[0]),
+    nodeAt(L.VX[3], L.HZ[2]), nodeAt(L.VX[2], L.HZ[2]), nodeAt(L.VX[1], L.HZ[2]), nodeAt(L.VX[0], L.HZ[2]),
   ];
-  const busStops = [nodeAt(-24, -25), nodeAt(50, -25), nodeAt(24, 25), nodeAt(-50, 25)];
+  const busStops = [nodeAt(L.VX[1], L.HZ[0]), nodeAt(L.VX[3], L.HZ[0]), nodeAt(L.VX[2], L.HZ[2]), nodeAt(L.VX[0], L.HZ[2])];
 
   return {
     blocks, blockById, buildings, buildingIndex, grid, pf, roads, spots, parkingSpots, exits,

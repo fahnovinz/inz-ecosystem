@@ -7,7 +7,7 @@ import { makeFx } from './fx.js';
 import { envUniforms } from './materials.js';
 import { CameraRig } from './camera.js';
 import { hourOf } from '../sim/common.js';
-import { WATER_BASE, FLOOD_STRIPS, FLOOD_ROADS } from '../world/layout.js';
+import { WATER_BASE, FLOOD_STRIPS, FLOOD_ROADS, HALF_W, HALF_D } from '../world/layout.js';
 
 // Hour, sky top, sky bottom, hemi sky, hemi ground, hemi intensity, sun colour, sun intensity, night.
 const KEYS = [
@@ -75,7 +75,8 @@ export function createRenderer(container, world, { onPick, onSky } = {}) {
   // On touch devices shadows are redrawn every other frame.
   if (coarse) renderer.shadowMap.autoUpdate = false;
   const sc = sun.shadow.camera;
-  sc.left = -95; sc.right = 95; sc.top = 70; sc.bottom = -70; sc.near = 10; sc.far = 400;
+  const reach = Math.hypot(HALF_W, HALF_D) * 1.02;
+  sc.left = -reach; sc.right = reach; sc.top = reach * 0.8; sc.bottom = -reach * 0.8; sc.near = 10; sc.far = 480;
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 0.04;
   scene.add(sun, sun.target);
@@ -206,7 +207,7 @@ export function createRenderer(container, world, { onPick, onSky } = {}) {
     hemi.color.copy(env.hemiSky);
     hemi.groundColor.copy(env.hemiGround);
     sun.color.copy(env.sun);
-    sun.position.copy(env.dir).multiplyScalar(160);
+    sun.position.copy(env.dir).multiplyScalar(200);
     sun.target.position.set(0, 0, 0);
     const out = fx.update(dt, time, state, world, env, (i) => city.buildingInfo[i].top - 0.2);
     hemi.intensity = env.hemiI + out.flash * 1.2;

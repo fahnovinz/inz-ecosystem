@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { radialTexture } from './materials.js';
 import { HALF_W, HALF_D, PENDOPO } from '../world/layout.js';
 
+const CLOUD_X = HALF_W + 45;
+
 const NIGHT_CLOUD = new THREE.Color(0x56627e);
 
 const PARTICLE_VS = `
@@ -217,8 +219,8 @@ function makeClouds(scene) {
     const m = new THREE.Mesh(variants[i % 3], mat);
     // Mostly around the edges so they frame the city instead of hiding it.
     const edge = i % 3 !== 0;
-    const z = edge ? (rnd() < 0.5 ? -1 : 1) * (48 + rnd() * 30) : (rnd() * 2 - 1) * 35;
-    m.position.set((rnd() * 2 - 1) * 110, 50 + rnd() * 10, z);
+    const z = edge ? (rnd() < 0.5 ? -1 : 1) * (HALF_D + rnd() * 30) : (rnd() * 2 - 1) * HALF_D * 0.7;
+    m.position.set((rnd() * 2 - 1) * CLOUD_X, 58 + rnd() * 10, z);
     m.rotation.y = rnd() * Math.PI;
     m.castShadow = true;
     m.scale.setScalar(0.001);
@@ -327,7 +329,7 @@ export function makeFx(scene, city) {
       m.scale.setScalar(Math.max(0.001, m.userData.k));
       m.visible = m.userData.k > 0.01;
       m.position.x += m.userData.speed * wind * dt;
-      if (m.position.x > 120) m.position.x = -120;
+      if (m.position.x > CLOUD_X) m.position.x = -CLOUD_X;
     });
 
     // Lightning.

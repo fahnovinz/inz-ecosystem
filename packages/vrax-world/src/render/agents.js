@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { radialTexture } from './materials.js';
 import { makePeople } from './people.js';
 
-const MAX_VEHICLES = 160;
+const MAX_VEHICLES = 220;
 
 // Vehicle parts in local space: [x, y, z, w, h, d, material]; z points forward.
 // Materials: p = paint, g = glass, d = dark, w = white, h = headlight, t = taillight, s = siren, a = accent, y = taxi sign

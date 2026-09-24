@@ -17,6 +17,9 @@ All notable changes to INZ Ecosystem are documented here.
 - Camera: the view follows fingers and the mouse exactly, drags keep the ground under the pointer, zoom centres on the cursor or between the fingers, two-finger tilt, double-tap zoom, and on-screen zoom and turn buttons
 - Phones and tablets render without MSAA at up to 1.5× resolution, with smaller shadow maps redrawn every other frame; resolution adapts to the measured frame rate
 
+### Changed
+- VRAX World streets at real proportions: two 3.5 m lanes each way, 3 m sidewalks, mid-block crossings and a larger city (186 × 120 m); vehicles hold their lane, take wider turns, and junctions let movements that don't cross go together without blocking the box
+
 ### Fixed
 - Pinch and twist failing on phones when a finger landed on a place label, and pinches outside the city zooming the whole page
 - Gridlock in VRAX World traffic: cars at right angles or side by side no longer wait on each other forever, and long-stuck drivers edge through junction knots

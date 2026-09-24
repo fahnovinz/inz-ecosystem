@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import * as L from '../world/layout.js';
+import { MIDBLOCK_Z } from '../world/world.js';
 import { box, cylinder, facadeBox, roofGeo, merge, Bucket, polyGeo } from './geom.js';
 import { patchMaterial, makeWindowTextures, makeGlassTextures, radialTexture } from './materials.js';
 import { makeRng, rand, range, pick } from '../sim/rng.js';
@@ -14,6 +15,8 @@ const C = {
   door: 0x5b4636, glassDark: 0x3a4d5f, white: 0xf3f1ea, red: 0xd0312d, tankBlue: 0x2f6fb0, tankOrange: 0xe07b39,
 };
 const TOP = 0.14; // lot surface height
+const PARK_PATH_X = L.PENDOPO.x + 2.6;
+const ARCH = 5; // height of the north bridge's steel arch
 
 function wallHex(b) { return L.WALL[b.wall] ?? 0xdddddd; }
 function roofHex(b) { return L.ROOF[b.roofColor] ?? 0x666666; }
@@ -43,38 +46,52 @@ export function buildCity(world, scene) {
   terrain.push(box(L.RIVER_HALF * 2 - 0.4, 0.2, L.HALF_D * 2, 0, -4.5, 0, C.bed));
 
   // ---- Lane markings and crossings ----------------------------------------------------
-  const isCrossing = (x, z) => {
-    for (const vx of L.VX) for (const hz of L.HZ) {
-      if (Math.abs(x - vx) < L.ROAD_HALF + 2.2 && Math.abs(z - hz) < L.ROAD_HALF + 2.2) return true;
+  // Two lanes each way: a solid centre line and dashed lane lines.
+  const crossZones = [];
+  for (const vx of L.VX) for (const hz of L.HZ) crossZones.push([vx, hz, L.ROAD_HALF + L.CROSSWALK + 0.3, L.ROAD_HALF + L.CROSSWALK + 0.3]);
+  for (const x of [-L.RIVERSIDE_X, L.RIVERSIDE_X]) for (const z of MIDBLOCK_Z) crossZones.push([x, z, L.ROAD_HALF + 0.3, L.CROSSWALK / 2 + 0.4]);
+  const isCrossing = (x, z) => crossZones.some(([cx, cz, hx, hz]) => Math.abs(x - cx) < hx && Math.abs(z - cz) < hz);
+  const markRoad = (alongX, c, a, b) => {
+    // Solid centre line in runs between junctions.
+    let run = null;
+    for (let t = a; t <= b; t += 0.5) {
+      const x = alongX ? t : c, z = alongX ? c : t;
+      const free = t < b && !isCrossing(x, z);
+      if (free && run === null) run = t;
+      if (!free && run !== null) {
+        const len = t - run, mid = run + len / 2;
+        if (len > 0.6) terrain.push(alongX ? box(len, 0.02, 0.16, mid, 0.012, c, C.marking) : box(0.16, 0.02, len, c, 0.012, mid, C.marking));
+        run = null;
+      }
     }
-    return false;
+    // Dashed lines between the two lanes of each direction.
+    for (const off of [-L.LANE, L.LANE]) {
+      for (let t = a + 1; t < b - 2; t += 4.5) {
+        const x = alongX ? t + 1.1 : c + off, z = alongX ? c + off : t + 1.1;
+        if (isCrossing(x, z) || isCrossing(alongX ? t : x, alongX ? z : t) || isCrossing(alongX ? t + 2.2 : x, alongX ? z : t + 2.2)) continue;
+        terrain.push(alongX ? box(2.2, 0.02, 0.14, x, 0.011, z, C.marking) : box(0.14, 0.02, 2.2, x, 0.011, z, C.marking));
+      }
+    }
   };
-  for (const vx of L.VX) {
-    for (let z = -L.HALF_D + 1; z < L.HALF_D - 1; z += 4.5) {
-      if (isCrossing(vx, z) || isCrossing(vx, z + 2)) continue;
-      terrain.push(box(0.16, 0.02, 2.2, vx, 0.01, z + 1.1, C.marking));
-    }
-  }
-  const hSpans = [[L.HZ[0], -L.HALF_W, L.HALF_W], [L.HZ[2], -L.HALF_W, L.HALF_W], [L.HZ[1], -L.HALF_W, -L.RIVERSIDE_X - L.ROAD_HALF], [L.HZ[1], L.RIVERSIDE_X + L.ROAD_HALF, L.HALF_W]];
-  for (const [hz, a, b] of hSpans) {
-    for (let x = a + 1; x < b - 1; x += 4.5) {
-      if (isCrossing(x, hz) || isCrossing(x + 2, hz)) continue;
-      terrain.push(box(2.2, 0.02, 0.16, x + 1.1, 0.01, hz, C.marking));
-    }
-  }
-  // Zebra crossings from the nav grid's crossing cells.
+  for (const vx of L.VX) markRoad(false, vx, -L.HALF_D, L.HALF_D);
+  markRoad(true, L.HZ[0], -L.HALF_W, L.HALF_W);
+  markRoad(true, L.HZ[2], -L.HALF_W, L.HALF_W);
+  markRoad(true, L.HZ[1], -L.HALF_W, -L.RIVERSIDE_X - L.ROAD_HALF);
+  markRoad(true, L.HZ[1], L.RIVERSIDE_X + L.ROAD_HALF, L.HALF_W);
+  // Zebra crossings, matching the nav grid's crossing cells.
   const zebra = (x0, z0, x1, z1, alongX) => {
-    if (alongX) for (let x = x0 + 0.35; x < x1 - 0.2; x += 1) terrain.push(box(0.5, 0.02, z1 - z0 - 0.3, x + 0.25, 0.012, (z0 + z1) / 2, C.marking));
-    else for (let z = z0 + 0.35; z < z1 - 0.2; z += 1) terrain.push(box(x1 - x0 - 0.3, 0.02, 0.5, (x0 + x1) / 2, 0.012, z + 0.25, C.marking));
+    if (alongX) for (let x = x0 + 0.35; x < x1 - 0.2; x += 1) terrain.push(box(0.5, 0.02, z1 - z0 - 0.3, x + 0.25, 0.013, (z0 + z1) / 2, C.marking));
+    else for (let z = z0 + 0.35; z < z1 - 0.2; z += 1) terrain.push(box(x1 - x0 - 0.3, 0.02, 0.5, (x0 + x1) / 2, 0.013, z + 0.25, C.marking));
   };
   const hasH = (z, x) => z !== L.HZ[1] || Math.abs(x) > L.RIVERSIDE_X + 0.1;
+  const RH = L.ROAD_HALF, CW = L.CROSSWALK;
   for (const vx of L.VX) for (const hz of L.HZ) {
-    zebra(vx - L.ROAD_HALF, hz - L.ROAD_HALF - 2, vx + L.ROAD_HALF, hz - L.ROAD_HALF, true);
-    zebra(vx - L.ROAD_HALF, hz + L.ROAD_HALF, vx + L.ROAD_HALF, hz + L.ROAD_HALF + 2, true);
-    if (hasH(hz, vx + 5)) zebra(vx + L.ROAD_HALF, hz - L.ROAD_HALF, vx + L.ROAD_HALF + 2, hz + L.ROAD_HALF, false);
-    if (hasH(hz, vx - 5)) zebra(vx - L.ROAD_HALF - 2, hz - L.ROAD_HALF, vx - L.ROAD_HALF, hz + L.ROAD_HALF, false);
+    zebra(vx - RH, hz - RH - CW, vx + RH, hz - RH, true);
+    zebra(vx - RH, hz + RH, vx + RH, hz + RH + CW, true);
+    if (hasH(hz, vx + RH + 1)) zebra(vx + RH, hz - RH, vx + RH + CW, hz + RH, false);
+    if (hasH(hz, vx - RH - 1)) zebra(vx - RH - CW, hz - RH, vx - RH, hz + RH, false);
   }
-  for (const x of [-L.RIVERSIDE_X, L.RIVERSIDE_X]) for (const z of [-12.5, 12.5]) zebra(x - L.ROAD_HALF, z - 1, x + L.ROAD_HALF, z + 1, true);
+  for (const x of [-L.RIVERSIDE_X, L.RIVERSIDE_X]) for (const z of MIDBLOCK_Z) zebra(x - RH, z - CW / 2, x + RH, z + CW / 2, true);
 
   // ---- Blocks and lots ----------------------------------------------------------------
   for (const b of world.blocks) {
@@ -104,8 +121,8 @@ export function buildCity(world, scene) {
 
   // Park paths, pendopo, beringin tree spot.
   const park = stripGroups.park;
-  terrain.push(box(2.2, 0.035, park.zIn1 - park.zIn0, -11.2, 0.13, 0, C.path));
-  for (const z of [-15, -6, 6, 15]) terrain.push(box(park.innerX1 - park.innerX0, 0.036, 1.8, (park.innerX0 + park.innerX1) / 2, 0.132, z, C.path));
+  terrain.push(box(2.2, 0.035, park.zIn1 - park.zIn0, PARK_PATH_X, 0.13, 0, C.path));
+  for (const z of [-19, -7, 7, 19]) terrain.push(box(park.innerX1 - park.innerX0, 0.036, 1.8, (park.innerX0 + park.innerX1) / 2, 0.132, z, C.path));
   terrain.push(box(9, 0.037, 9, L.PENDOPO.x, 0.134, L.PENDOPO.z, C.path));
   {
     const { x, z, half } = L.PENDOPO;
@@ -115,10 +132,7 @@ export function buildCity(world, scene) {
     details.addAll(roofGeo('pyramid', x - 1.6, z - 1.6, x + 1.6, z + 1.6, 5.2, 0x6a3f2c, 0x6a3f2c, 'auto', 0.3));
   }
   // Benches.
-  for (const z of [-18, -10, 10, 18]) {
-    details.add(box(0.6, 0.45, 1.8, -8.9, 0.4, z, C.wood));
-    details.add(box(0.6, 0.45, 1.8, -8.9, 0.4, z, C.wood));
-  }
+  for (const z of [-22, -12, 12, 22]) details.add(box(0.6, 0.45, 1.8, park.s.x1 - 1.1, 0.4, z, C.wood));
   // Gardens: winding path.
   for (const g of [stripGroups['garden-nw'], stripGroups['garden-ne']]) {
     const cx = (g.innerX0 + g.innerX1) / 2;
@@ -127,11 +141,13 @@ export function buildCity(world, scene) {
   // Pier: wooden deck into the river and the boathouse.
   {
     const bh = world.boathouse;
-    details.add(box(6.2, 0.3, 3.2, -7 + 3, -0.05, 41, C.wood));
-    for (let x = -6; x <= -1; x += 1.6) details.add(cylinder(0.12, 0.12, 3.6, 5, x, -1.8, 42.5, 0x6b4f37));
+    const dz = (bh.z0 + bh.z1) / 2;
+    details.add(box(6.2, 0.3, 3.2, -L.RIVER_HALF + 3, -0.05, dz, C.wood));
+    for (let x = -L.RIVER_HALF + 1; x <= -L.RIVER_HALF + 6; x += 1.6) details.add(cylinder(0.12, 0.12, 3.6, 5, x, -1.8, dz + 1.5, 0x6b4f37));
     walls.add(facadeBox(bh.x1 - bh.x0, 3.2, bh.z1 - bh.z0, (bh.x0 + bh.x1) / 2, TOP + 1.6, (bh.z0 + bh.z1) / 2, 0xd8c7a3, 3, 3.2, 0.25, 0));
     roofs.addAll(roofGeo('gable', bh.x0, bh.z0, bh.x1, bh.z1, TOP + 3.2, 0x2f6f73, 0xd8c7a3, 'z'));
-    colliders.push({ id: 'pier', x0: -20.5, x1: -7, z0: 28.5, z1: 46, y1: 3 });
+    const ps = L.strip('pier');
+    colliders.push({ id: 'pier', x0: ps.x0, x1: ps.x1, z0: ps.z0, z1: ps.z1, y1: 3 });
   }
   // Warung row: kiosks with tarps, tables and string lights.
   const warungLights = [];
@@ -143,14 +159,18 @@ export function buildCity(world, scene) {
       details.add(box(0.9, 0.8, k.d * 0.8, k.x + 1.7, TOP + 0.9, k.z, 0x8b5e3c));
       for (let t = 0; t < 2; t++) {
         const tz = k.z + (t - 0.5) * 1.4;
-        details.add(box(0.9, 0.7, 0.9, 15.2, TOP + 0.35, tz, 0xf0f0f0));
-        details.add(box(0.35, 0.4, 0.35, 16.2, TOP + 0.2, tz, pick(rng, [0xe63946, 0x1d4ed8, 0x16a34a])));
-        details.add(box(0.35, 0.4, 0.35, 14.2, TOP + 0.2, tz, pick(rng, [0xe63946, 0x1d4ed8, 0x16a34a])));
+        details.add(box(0.9, 0.7, 0.9, k.x + 5, TOP + 0.35, tz, 0xf0f0f0));
+        details.add(box(0.35, 0.4, 0.35, k.x + 6, TOP + 0.2, tz, pick(rng, [0xe63946, 0x1d4ed8, 0x16a34a])));
+        details.add(box(0.35, 0.4, 0.35, k.x + 4, TOP + 0.2, tz, pick(rng, [0xe63946, 0x1d4ed8, 0x16a34a])));
       }
     });
-    for (let z = 30; z <= 44.5; z += 0.9) warungLights.push([12.6, 3.1 + Math.sin(z * 1.3) * 0.15, z]);
-    details.add(box(0.1, 3.2, 0.1, 12.6, TOP + 1.6, 29.7, C.dark));
-    details.add(box(0.1, 3.2, 0.1, 12.6, TOP + 1.6, 45, C.dark));
+    const ws = L.strip('warung');
+    const lx = world.kiosks[0].x + 2.4;
+    const lz0 = world.kiosks[0].z - 1.8, lz1 = world.kiosks[world.kiosks.length - 1].z + 1.8;
+    for (let z = lz0; z <= lz1; z += 0.9) warungLights.push([lx, 3.1 + Math.sin(z * 1.3) * 0.15, z]);
+    details.add(box(0.1, 3.2, 0.1, lx, TOP + 1.6, lz0, C.dark));
+    details.add(box(0.1, 3.2, 0.1, lx, TOP + 1.6, lz1, C.dark));
+    colliders.push({ id: 'warung', x0: ws.x0, x1: ws.x1, z0: ws.z0, z1: ws.z1, y1: 2.5 });
   }
 
   // Parking lot surface and stall lines (hidden when it becomes a garden).
@@ -161,16 +181,19 @@ export function buildCity(world, scene) {
     parkingLotGeo.push(box(2.6, 0.02, 0.1, s.x, 0.15, s.z - 1.35, C.marking));
     parkingLotGeo.push(box(2.6, 0.02, 0.1, s.x, 0.15, s.z + 1.35, C.marking));
   }
-  parkingLotGeo.push(box(1.2, 0.02, 0.1, 19.5, 0.15, L.PARKING_ENTRY_Z - 2.2, C.marking));
+  parkingLotGeo.push(box(1.2, 0.02, 0.1, L.PARKING.gateX, 0.15, L.PARKING.entryZ - 2.2, C.marking));
+  parkingLotGeo.push(box(1.2, 0.02, 0.1, L.PARKING.gateX, 0.15, L.PARKING.entryZ + 2.2, C.marking));
   const parkingParkGeo = [];
   parkingParkGeo.push(box(parking.innerX1 - parking.innerX0, 0.035, parking.zIn1 - parking.zIn0, (parking.innerX0 + parking.innerX1) / 2, 0.126, 0, C.park));
-  parkingParkGeo.push(box(1.8, 0.04, parking.zIn1 - parking.zIn0, 13.5, 0.14, 0, C.path));
-  for (const z of [-12, 0, 12]) parkingParkGeo.push(box(parking.innerX1 - parking.innerX0, 0.041, 1.6, 13.5, 0.141, z, C.path));
-  parkingParkGeo.push(cylinder(2.2, 2.4, 0.5, 12, 13.5, 0.35, 0, 0xcfc6b4));
-  parkingParkGeo.push(cylinder(1.8, 1.8, 0.1, 12, 13.5, 0.6, 0, 0x5aa6c1));
-  colliders.push({ id: 'parking', x0: 7, x1: 20.5, z0: -21.5, z1: 21.5, y1: 1 });
-  colliders.push({ id: 'park', x0: -20.5, x1: -7, z0: -21.5, z1: 21.5, y1: 1 });
-  colliders.push({ id: 'warung', x0: 7, x1: 20.5, z0: 28.5, z1: 46, y1: 2.5 });
+  const ax = L.PARKING.aisleX;
+  parkingParkGeo.push(box(1.8, 0.04, parking.zIn1 - parking.zIn0, ax, 0.14, 0, C.path));
+  for (const z of [-15, 0, 15]) parkingParkGeo.push(box(parking.innerX1 - parking.innerX0, 0.041, 1.6, ax, 0.141, z, C.path));
+  parkingParkGeo.push(cylinder(2.2, 2.4, 0.5, 12, ax, 0.35, 0, 0xcfc6b4));
+  parkingParkGeo.push(cylinder(1.8, 1.8, 0.1, 12, ax, 0.6, 0, 0x5aa6c1));
+  for (const id of ['parking', 'park']) {
+    const st = L.strip(id);
+    colliders.push({ id, x0: st.x0, x1: st.x1, z0: st.z0, z1: st.z1, y1: 1 });
+  }
 
   // School field, tower plaza fountain, market stalls.
   const school = world.buildings[world.buildingIndex.school];
@@ -200,9 +223,19 @@ export function buildCity(world, scene) {
     }
   }
   // Bus shelters.
-  for (const [x, z, rot] of [[-31.5, -29.9, 0], [42.5, -29.9, 0], [31.5, 29.9, 0], [-42.5, 29.9, 0]]) {
+  // Bus shelters on the curb where the TransVrax bus stops.
+  for (const stop of world.busStops) {
+    const i = world.busLoop.indexOf(stop);
+    const prev = world.roads.nodes[world.busLoop[(i + world.busLoop.length - 1) % world.busLoop.length]];
+    const n = world.roads.nodes[stop];
+    const len = Math.hypot(n.x - prev.x, n.z - prev.z);
+    const dx = (n.x - prev.x) / len, dz = (n.z - prev.z) / len;
+    const lx = dz, lz = -dx; // keep-left side of the road
+    const off = L.ROAD_HALF + L.SIDEWALK * 0.55;
+    const x = n.x - dx * (L.ROAD_HALF + 7) + lx * off, z = n.z - dz * (L.ROAD_HALF + 7) + lz * off;
+    const rot = Math.abs(dx) > 0.5 ? 0 : Math.PI / 2;
     details.add(box(2.6, 0.08, 1.2, x, 2.5, z, 0x0ea5e9, rot));
-    details.add(box(2.6, 2.2, 0.06, x, 1.35, z + (z < 0 ? -0.55 : 0.55), 0x9fb9c8, rot));
+    details.add(box(2.6, 2.2, 0.06, x + lx * 0.55, 1.35, z + lz * 0.55, 0x9fb9c8, rot));
     details.add(box(2.2, 0.35, 0.4, x, 0.55, z, C.dark, rot));
   }
 
@@ -223,7 +256,7 @@ export function buildCity(world, scene) {
         for (let i = 0; i < n; i++) {
           const a0 = i / n, a1 = (i + 1) / n;
           const x0 = -L.RIVER_HALF + a0 * L.RIVER_HALF * 2, x1 = -L.RIVER_HALF + a1 * L.RIVER_HALF * 2;
-          const y0 = 1 + Math.sin(a0 * Math.PI) * 4.2, y1 = 1 + Math.sin(a1 * Math.PI) * 4.2;
+          const y0 = 1 + Math.sin(a0 * Math.PI) * ARCH, y1 = 1 + Math.sin(a1 * Math.PI) * ARCH;
           const len = Math.hypot(x1 - x0, y1 - y0);
           const g = new THREE.BoxGeometry(len, 0.32, 0.32).toNonIndexed();
           g.rotateZ(Math.atan2(y1 - y0, x1 - x0));
@@ -234,12 +267,12 @@ export function buildCity(world, scene) {
       }
       for (let i = 1; i < 5; i++) {
         const x = -L.RIVER_HALF + (i / 5) * L.RIVER_HALF * 2;
-        const y = 1 + Math.sin((i / 5) * Math.PI) * 4.2;
+        const y = 1 + Math.sin((i / 5) * Math.PI) * ARCH;
         details.add(box(0.2, 0.2, (L.ROAD_HALF + L.SIDEWALK) * 2, x, y, bz, C.steel));
       }
     } else {
       // Concrete bridge on two piers, with lamp posts.
-      for (const x of [-3, 3]) terrain.push(box(1.4, 4.6, L.ROAD_HALF * 2 + 2, x, -2.9, bz, C.stone));
+      for (const x of [-L.RIVER_HALF * 0.42, L.RIVER_HALF * 0.42]) terrain.push(box(1.4, 4.6, L.ROAD_HALF * 2 + 2, x, -2.9, bz, C.stone));
       for (const s of [-1, 1]) {
         for (let x = -6; x <= 6; x += 1.2) details.add(box(0.14, 0.9, 0.14, x, 0.55, bz + s * (L.ROAD_HALF + L.SIDEWALK - 0.1), C.rail));
       }
@@ -249,9 +282,10 @@ export function buildCity(world, scene) {
     const barrierGeo = [];
     for (const end of [-1, 1]) {
       const x = end * (L.RIVER_HALF + 2.3);
-      for (let k = 0; k < 5; k++) {
-        barrierGeo.push(box(0.35, 0.5, 1.3, x, 0.55, bz - L.ROAD_HALF + 0.75 + k * 1.4, k % 2 ? C.white : C.red));
-        barrierGeo.push(box(0.35, 0.5, 1.3, x, 0.05 + 0.5, bz - L.ROAD_HALF + 0.75 + k * 1.4, k % 2 ? C.white : C.red));
+      const n = Math.ceil((L.ROAD_HALF * 2) / 1.4);
+      const step = (L.ROAD_HALF * 2) / n;
+      for (let k = 0; k < n; k++) {
+        barrierGeo.push(box(0.35, 0.5, step - 0.1, x, 0.55, bz - L.ROAD_HALF + step * (k + 0.5), k % 2 ? C.white : C.red));
       }
       for (const s of [-1, 1]) barrierGeo.push(box(0.3, 1.1, 0.3, x, 0.55, bz + s * (L.ROAD_HALF + 0.3), C.dark));
     }
@@ -261,7 +295,8 @@ export function buildCity(world, scene) {
     g.visible = false;
     scene.add(g);
     bridgeGroups[name] = { group: g, lights: [[-(L.RIVER_HALF + 2.3), 1.3, bz - L.ROAD_HALF - 0.3], [-(L.RIVER_HALF + 2.3), 1.3, bz + L.ROAD_HALF + 0.3], [L.RIVER_HALF + 2.3, 1.3, bz - L.ROAD_HALF - 0.3], [L.RIVER_HALF + 2.3, 1.3, bz + L.ROAD_HALF + 0.3]] };
-    colliders.push({ id: `bridge-${name}`, x0: -9.5, x1: 9.5, z0: bz - 6, z1: bz + 6, y1: 5 });
+    const reach = L.RIVER_HALF + 2.5, half = L.ROAD_HALF + L.SIDEWALK;
+    colliders.push({ id: `bridge-${name}`, x0: -reach, x1: reach, z0: bz - half, z1: bz + half, y1: 5 });
   }
 
   // ---- Buildings ----------------------------------------------------------------------
@@ -384,7 +419,10 @@ export function buildCity(world, scene) {
   const trees = placeTrees(world, rng);
   const treeSet = makeTrees(trees, scene);
   const parkTrees = [];
-  for (const [x, z] of [[9.5, -17], [17.5, -14], [9.5, -4], [17.5, 5], [9.5, 9], [17.5, 17], [10, 17.5], [16.5, -5]]) parkTrees.push({ x, z, r: range(rng, 1.3, 1.9), h: range(rng, 1.8, 2.4), kind: 'round', tone: rand(rng) });
+  for (const [fx, z] of [[0, -21], [1, -18], [0, -5], [1, 5], [0, 10], [1, 21], [0, 22], [1, -7]]) {
+    const x = fx ? parking.innerX1 - 1.8 : parking.innerX0 + 1.6;
+    parkTrees.push({ x, z, r: range(rng, 1.3, 1.9), h: range(rng, 1.8, 2.4), kind: 'round', tone: rand(rng) });
+  }
   const parkTreeSet = makeTrees(parkTrees, scene);
   parkTreeSet.setVisible(false);
 
@@ -654,7 +692,9 @@ function placeTrees(world, rng) {
     for (let k = 0; k < n; k++) {
       const x = range(rng, x0, x1), z = range(rng, s.z0 + 2.5, s.z1 - 2.5);
       if (s.kind === 'park' && Math.hypot(x - L.PENDOPO.x, z - L.PENDOPO.z) < 6) continue;
-      if (Math.abs(x - (s.x0 < 0 ? -11.2 : 13.5)) < 1.6) continue; // path
+      const inner = L.stripInner(s);
+      const pathX = s.kind === 'park' ? PARK_PATH_X : (inner.x0 + inner.x1) / 2;
+      if (Math.abs(x - pathX) < 1.6) continue;
       if (s.kind === 'pier' && z > 36) continue;
       add(x, z, 'round', 1.05);
     }
@@ -663,8 +703,8 @@ function placeTrees(world, rng) {
     for (let z = s.z0 + 3; z < s.z1 - 2; z += 6.5) if (s.kind !== 'pier') trees.push({ x: rx, z, kind: 'palm', r: 1, h: range(rng, 5.5, 7), tone: rand(rng) });
   }
   // The old banyan (beringin) in Taman Vrax.
-  trees.push({ x: -14, z: -13.5, kind: 'big', r: 4.2, h: 3.2, tone: 0.5 });
-  trees.push({ x: -14.5, z: 13.5, kind: 'big', r: 3.4, h: 2.8, tone: 0.3 });
+  trees.push({ x: L.PENDOPO.x - 0.5, z: -13, kind: 'big', r: 4.2, h: 3.2, tone: 0.5 });
+  trees.push({ x: L.PENDOPO.x - 1, z: 13, kind: 'big', r: 3.4, h: 2.8, tone: 0.3 });
   return trees;
 }
 
@@ -832,8 +872,9 @@ function makeFestival(scene, rng) {
   const parts = [];
   const cols = [0xe63946, 0xffb703, 0x219ebc, 0x8ecae6, 0xfb8500, 0x9b5de5, 0x06d6a0];
   let k = 0;
-  for (const z of [-19, -16, -11, 11, 16, 19]) {
-    for (const x of [-17.2]) {
+  const fp = L.stripInner(L.strip('park'));
+  for (const z of [-24, -20, -16, 16, 20, 24]) {
+    for (const x of [fp.x0 + 1.8]) {
       parts.push(box(1.8, 0.9, 1.6, x, 0.6, z, 0xf1ead8));
       parts.push(box(2.3, 0.1, 2.1, x, 2.3, z, cols[k++ % cols.length]));
       parts.push(box(0.08, 2.2, 0.08, x - 1, 1.2, z - 0.9, 0x333333));
@@ -846,7 +887,8 @@ function makeFestival(scene, rng) {
   parts.push(box(0.1, 1.2, 5, L.PENDOPO.x + 3.35, 3.0, L.PENDOPO.z, 0x0ea5e9));
   // Lantern poles.
   const lanterns = [];
-  const poles = [[-19.5, -20], [-19.5, -7], [-19.5, 7], [-19.5, 20], [-8.4, -20], [-8.4, -7], [-8.4, 7], [-8.4, 20]];
+  const poles = [];
+  for (const x of [fp.x0 + 0.4, fp.x1 - 0.6]) for (const z of [-25, -9, 9, 25]) poles.push([x, z]);
   for (const [x, z] of poles) parts.push(box(0.12, 4.6, 0.12, x, 2.4, z, 0x333333));
   for (let i = 0; i < poles.length / 2; i++) {
     const a = poles[i], b = poles[i + poles.length / 2];

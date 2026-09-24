@@ -125,8 +125,10 @@ function bezier(out, p0, c1, c2, p3, steps) {
 // Builds the lane polyline for a node path.
 // opts.start: [x, z] exact start (defaults to the lane point at the first node)
 // opts.uturn: begin with a U-turn from the opposite lane of the first edge
+// opts.offset: distance of the lane centre from the road centre line
 // Returns { poly, cum, zones, segs, len }.
 export function buildPolyline(graph, nodes, opts = {}) {
+  const off = opts.offset ?? LANE_OFFSET;
   const N = graph.nodes;
   const pts = [];
   const zones = [];
@@ -147,14 +149,14 @@ export function buildPolyline(graph, nodes, opts = {}) {
     // Opposite lane, same spot, facing back along the first edge.
     const [sx, sz] = opts.start;
     const p0 = [sx, sz];
-    const p3 = [sx + L0[0] * LANE_OFFSET * 2, sz + L0[1] * LANE_OFFSET * 2];
+    const p3 = [sx + L0[0] * off * 2, sz + L0[1] * off * 2];
     pts.push(p0[0], p0[1]);
-    const k = 3;
+    const k = off + 1.5;
     bezier(pts, p0, [p0[0] - d0[0] * k, p0[1] - d0[1] * k], [p3[0] - d0[0] * k, p3[1] - d0[1] * k], p3, 8);
   } else if (opts.start) {
     pts.push(opts.start[0], opts.start[1]);
   } else {
-    pts.push(n0.x + L0[0] * LANE_OFFSET, n0.z + L0[1] * LANE_OFFSET);
+    pts.push(n0.x + L0[0] * off, n0.z + L0[1] * off);
   }
 
   let segStart = 0;
@@ -163,7 +165,7 @@ export function buildPolyline(graph, nodes, opts = {}) {
     const din = dir(nodes[i - 1], nodes[i]);
     const Lin = left(din[0], din[1]);
     if (i === nodes.length - 1) {
-      pts.push(n.x + Lin[0] * LANE_OFFSET, n.z + Lin[1] * LANE_OFFSET);
+      pts.push(n.x + Lin[0] * off, n.z + Lin[1] * off);
       segs.push({ i0: segStart, i1: pts.length / 2 - 1, a: nodes[i - 1], b: nodes[i] });
       break;
     }
@@ -172,9 +174,9 @@ export function buildPolyline(graph, nodes, opts = {}) {
     const dot = din[0] * dout[0] + din[1] * dout[1];
     const isX = n.kind === 'x';
     const uturn = dot < -0.9;
-    const inset = isX ? ROAD_HALF : uturn ? 2.5 : 0;
-    const pin = [n.x - din[0] * inset + Lin[0] * LANE_OFFSET, n.z - din[1] * inset + Lin[1] * LANE_OFFSET];
-    const pout = [n.x + dout[0] * inset + Lout[0] * LANE_OFFSET, n.z + dout[1] * inset + Lout[1] * LANE_OFFSET];
+    const inset = isX ? ROAD_HALF : uturn ? Math.max(2.5, off) : 0;
+    const pin = [n.x - din[0] * inset + Lin[0] * off, n.z - din[1] * inset + Lin[1] * off];
+    const pout = [n.x + dout[0] * inset + Lout[0] * off, n.z + dout[1] * inset + Lout[1] * off];
     pts.push(pin[0], pin[1]);
     segs.push({ i0: segStart, i1: pts.length / 2 - 1, a: nodes[i - 1], b: nodes[i] });
     const zi0 = pts.length / 2 - 1;
@@ -182,7 +184,7 @@ export function buildPolyline(graph, nodes, opts = {}) {
       segStart = zi0;
       continue;
     }
-    const k = uturn ? 3 : Math.max(inset * 0.55, 0.5);
+    const k = uturn ? off + 1.5 : Math.max(inset * 0.55, 0.5);
     bezier(pts, pin, [pin[0] + din[0] * k, pin[1] + din[1] * k], [pout[0] - dout[0] * k, pout[1] - dout[1] * k], pout, uturn ? 10 : 6);
     const zi1 = pts.length / 2 - 1;
     if (isX) zones.push({ i0: zi0, i1: zi1, node: nodes[i], straight: dot > 0.99 });

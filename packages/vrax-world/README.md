@@ -67,7 +67,7 @@ The interpreter understands paraphrases, place names, amounts (`50 cm`, `setenga
 | Blackout | Windows and street lamps go dark, people come out with phone torches, and only VRAX Tower stays lit on backup power. |
 | Time of day / season | Sun, shadows, window lights and street lamps follow the clock. Winter covers roofs and parks in snow; autumn turns the trees. |
 
-Traffic keeps left, as in Indonesia. Motorbikes, taxis and the TransVrax bus loop share the roads, and drivers stop for people on zebra crossings. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
+Traffic keeps left, as in Indonesia. Streets are built to real proportions: two 3.5 m lanes each way, 3 m sidewalks and wide corner turns. Motorbikes and the TransVrax bus keep to the kerb lane, cars and taxis pick either lane, turns that don't cross go through a junction together, and nobody enters a junction when the road beyond it is backed up. Drivers stop for people on zebra crossings. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
 
 ## Controls
 
@@ -91,13 +91,13 @@ packages/vrax-world/
     ├── main.js            app wiring: state, undo, showcase, main loop
     ├── interpreter.js     EN/ID rule-based command parser (pure)
     ├── i18n.js            interface text in English and Bahasa Indonesia
-    ├── world/layout.js    blocks, roads, river, buildings, landmarks
+    ├── world/layout.js    lane and sidewalk sizes, blocks, river, buildings, landmarks
     ├── world/world.js     derived world: doors, pedestrian grid, road graph
     ├── sim/               simulation (no three.js, runs in Node)
     │   ├── nav.js         1 m walk grid, A*, line-of-sight smoothing
     │   ├── roads.js       road graph, Dijkstra, left-hand lane polylines
     │   ├── people.js      residents, plans, outdoor targets, shelter
-    │   ├── vehicles.js    traffic, junction claims, closures, buses
+    │   ├── vehicles.js    traffic, lanes, junction reservations, closures, buses
     │   ├── events.js      fire, robbery, festival crowds, boats
     │   ├── actions.js     applies one command, reports what changed
     │   └── state.js, step.js, rng.js, common.js
