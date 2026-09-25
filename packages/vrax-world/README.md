@@ -68,7 +68,7 @@ The interpreter understands paraphrases, place names, amounts (`50 cm`, `setenga
 | Blackout | Windows and street lamps go dark, people come out with phone torches, and only VRAX Tower stays lit on backup power. |
 | Time of day / season | Sun, shadows, window lights and street lamps follow the clock. Winter covers roofs and parks in snow; autumn turns the trees. |
 
-Traffic keeps left, as in Indonesia. Streets are built to real proportions: two 3.5 m lanes each way, 3 m sidewalks and wide corner turns. Motorbikes and the TransVrax bus keep to the kerb lane, cars and taxis pick either lane, turns that don't cross go through a junction together, and nobody enters a junction when the road beyond it is backed up. Nobody drives through anybody: drivers keep their distance along their own path, even mid-turn, wait behind the zebra at a junction, and stop for people on it; people wait at the kerb for a car that is close, and let a driver through who has been waiting. Residents walk with swinging arms and legs; some wear a hijab or a peci, and some are kids on their way to school.
+Traffic keeps left, as in Indonesia. Streets are built to real proportions: two 3.5 m lanes each way, 3 m sidewalks and wide corner turns. Motorbikes and the TransVrax bus keep to the kerb lane, cars and taxis pick either lane, turns that don't cross go through a junction together, and nobody enters a junction when the road beyond it is backed up. Nobody drives through anybody: drivers keep their distance along their own path, even mid-turn, wait behind the zebra at a junction, and stop for people on it; people wait at the kerb for a car that is close, and let a driver through who has been waiting. Residents are jointed 3D figures that bend at the knee and elbow, sway and bob as they walk, break into a run when hurrying, and hold their umbrella up in the rain; some wear a hijab or a peci, and some are kids on their way to school. Follow someone to see them up close.
 
 Riverside Parking has two rows of stalls either side of a two-way aisle, with its driveway as the fourth arm of the junction on the riverside road. Cars drive in nose first and back out before leaving; people walk around the lot on the sidewalk and cross the driveway on a zebra. Turned into a garden, it opens once the last car has gone.
 
@@ -128,7 +128,7 @@ packages/vrax-world/
 - **The simulation runs without a browser.** `test/vrax-world.test.js` builds the world in Node, runs the clock, closes bridges, starts fires and checks the outcomes.
 - **Sound reads state every frame too.** The mood comes from the city (`moodFor`), changes land on the next bar, and city sounds are placed left or right of the camera and get louder as it comes closer.
 - **Rendering reads state every frame.** Merged geometry for the city, instanced vehicles, and a small shader patch that adds snow on upward faces and a wet look on roads.
-- **One draw call for the whole crowd.** Every resident is an instance of a single low-poly figure; a vertex shader swings the arms and legs and picks the clothes, skin, hair or hijab colours per instance.
+- **One draw call for the whole crowd.** Every resident is an instance of a single jointed figure; a vertex shader poses hips, knees, shoulders and elbows (in the shadow pass too) and picks the clothes, skin, hair, hijab and shoe colours per instance. The gait phase advances with distance walked, so feet don't slide.
 
 ## Tests
 

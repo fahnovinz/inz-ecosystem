@@ -10,7 +10,7 @@ import { HALF_W, HALF_D } from '../world/layout.js';
 
 // Default framing scales with the size of the city.
 const DEFAULT = { x: 2, z: 4, dist: HALF_W * 3.54, az: 0.36, el: 0.76 };
-const MIN_DIST = 20;
+const MIN_DIST = 7; // close enough to see a resident's face
 const MAX_DIST = HALF_W * 4.9;
 const KEYS = ['x', 'z', 'dist', 'az', 'el'];
 // Interface on top of the city that keeps its own touches. Landmark labels are not
@@ -88,8 +88,12 @@ export class CameraRig {
   apply() {
     const { x, z, dist, az, el } = this.cur;
     const ce = Math.cos(el);
-    this.camera.position.set(x + dist * ce * Math.sin(az), dist * Math.sin(el), z + dist * ce * Math.cos(az));
-    this.camera.lookAt(x, 0, z);
+    // Up close, aim at chest height rather than the ground, and bring the near plane in.
+    const lookY = Math.max(0, Math.min(1, (40 - dist) / 30)) * 1.3;
+    this.camera.position.set(x + dist * ce * Math.sin(az), lookY + dist * Math.sin(el), z + dist * ce * Math.cos(az));
+    this.camera.lookAt(x, lookY, z);
+    const near = Math.max(0.5, Math.min(5, dist * 0.2));
+    if (Math.abs(this.camera.near - near) > 0.05) { this.camera.near = near; this.camera.updateProjectionMatrix(); }
     this.camera.updateMatrixWorld();
   }
 

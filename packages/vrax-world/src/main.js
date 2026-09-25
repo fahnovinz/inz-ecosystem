@@ -158,7 +158,8 @@ function follow(on) {
     const a = list.find((x) => x.id === sel.id);
     return a ? { x: a.x, z: a.z } : null;
   };
-  renderer.rig.flyTo({ dist: 75, el: 0.62 }, 0.9);
+  // A resident is followed from just behind their shoulder, a vehicle from higher up.
+  renderer.rig.flyTo(sel.kind === 'person' ? { dist: 14, el: 0.34 } : { dist: 75, el: 0.62 }, 0.9);
 }
 
 // ---- Showcase: a scripted tour that restores the city afterwards -------------------------
