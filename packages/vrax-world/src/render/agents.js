@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { radialTexture } from './materials.js';
+import { onStreet } from '../sim/police.js';
 import { makePeople } from './people.js';
 
 const MAX_VEHICLES = 220;
@@ -147,7 +148,7 @@ export function makeAgents(scene) {
     if (selection && (selection.kind === 'person' || selection.kind === 'vehicle')) {
       const list = selection.kind === 'person' ? state.people : state.vehicles;
       const a = list.find((x) => x.id === selection.id);
-      if (a && (selection.kind === 'vehicle' || a.st === 'walk' || a.st === 'idle')) {
+      if (a && (selection.kind === 'vehicle' || onStreet(a))) {
         ring.visible = true;
         const r = selection.kind === 'vehicle' ? Math.max(1.4, (a.len || 4) * 0.55) : 1;
         ring.scale.setScalar(r);

@@ -6,6 +6,7 @@ import { cellIndex } from './nav.js';
 import { edgeBlocked, edgeCost, isWet, pedBlocked, flood2, gardenOpen } from './common.js';
 import { makeVehicle, replan, setBarrier, setPlan, sendHome, currentSeg, lanePoly, OUTER } from './vehicles.js';
 import { startTrip, redirect, homePlan } from './people.js';
+import { casesStep } from './police.js';
 import { BOAT_CLEARANCE, BOAT_AGROUND, BRIDGE_Z, PENDOPO, HALF_W, HALF_D, RIVER_HALF, ROAD_HALF, SIDEWALK, strip } from '../world/layout.js';
 
 // ---- Fire ------------------------------------------------------------------------
@@ -386,6 +387,7 @@ function boatsStep(state, dt) {
 export function eventsStep(state, world, dt, ctx, emit) {
   fireStep(state, world, dt, ctx, emit);
   robberyStep(state, world, dt, ctx, emit);
+  casesStep(state, world, dt, emit);
   boatsStep(state, dt);
   if (state.festival.on && state.t >= (state.festival.nextPull || 0)) {
     state.festival.nextPull = state.t + 6;

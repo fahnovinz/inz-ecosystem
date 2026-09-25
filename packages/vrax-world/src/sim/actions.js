@@ -7,10 +7,11 @@ import { isWet, periodOf, burning } from './common.js';
 import { markBlockedWalkers, startTrip, shelterPlan, isOutdoors, redirect, homePlan } from './people.js';
 import { rerouteAll, spawnTraffic, edgeUsesBridge } from './vehicles.js';
 import { startFire, extinguish, startRobbery, festivalCrowd } from './events.js';
+import { arrestPerson, killPerson, releasePrisoners } from './police.js';
 
 export const TIME_PRESETS = { morning: 7 * 60 + 15, noon: 12 * 60 + 30, sunset: 17 * 60 + 25, night: 21 * 60 };
 
-const WORLD_ACTIONS = new Set(['weather', 'time', 'timeStep', 'timeLock', 'season', 'river', 'bridge', 'parking', 'festival', 'fire', 'extinguish', 'robbery', 'blackout', 'rush', 'fireworks', 'lightshow']);
+const WORLD_ACTIONS = new Set(['weather', 'time', 'timeStep', 'timeLock', 'season', 'river', 'bridge', 'parking', 'festival', 'fire', 'extinguish', 'robbery', 'blackout', 'rush', 'fireworks', 'lightshow', 'arrest', 'kill', 'release']);
 export const changesWorld = (a) => WORLD_ACTIONS.has(a.type);
 
 function sendIndoors(state, world, filter) {
@@ -171,6 +172,12 @@ export function applyAction(state, world, a) {
       }
       return { kind: 'lightshow', on: a.on };
     }
+    case 'arrest':
+      return arrestPerson(state, world, a.id);
+    case 'kill':
+      return killPerson(state, world, a.id);
+    case 'release':
+      return releasePrisoners(state, world);
     default:
       return { kind: 'none', reason: 'unknown' };
   }

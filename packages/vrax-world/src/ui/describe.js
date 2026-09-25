@@ -5,6 +5,7 @@ import { t, formatClock, formatLevel, getLang } from '../i18n.js';
 import { isOutdoors, umbrellaCount, outdoorCount, countPurpose } from '../sim/people.js';
 import { waitingCount, unreachableCount } from '../sim/vehicles.js';
 import { periodOf, isWet, isNight, burning } from '../sim/common.js';
+import { prisonerCount } from '../sim/police.js';
 import { FLOOD_STRIPS, FLOOD_ROADS, BOAT_CLEARANCE, BOAT_AGROUND, HALF_W } from '../world/layout.js';
 
 export function buildingName(world, idx) {
@@ -167,6 +168,34 @@ export function describeNotice(n, state, world) {
         return [];
       };
       break;
+    case 'arrest':
+    case 'kill': {
+      out.title = t(n.kind === 'arrest' ? 'n.arrest' : 'n.kill', { name: n.name || t('p.robberName') });
+      out.live = () => {
+        const s = state();
+        const c = s.cases.find((x) => x.person === n.id);
+        const p = s.people.find((x) => x.id === n.id);
+        const lines = [];
+        if (n.kind === 'arrest') {
+          if (p && p.st === 'jail') lines.push(t('c.jailed', { name: n.name || t('p.robberName') }));
+          else if (c && c.phase === 'escort') lines.push(t('c.escort'));
+          else if (c) lines.push(t('c.policeOnWay'));
+          else if (p && p.st !== 'held') lines.push(t('c.arrestFailed'));
+        } else {
+          if (!p) lines.push(t('c.bodyTaken'));
+          else if (c && c.phase === 'scene') lines.push(t('p.policeScene'));
+          else lines.push(t('c.policeOnWay'));
+          const gawk = countPurpose(s, 'gawk');
+          if (gawk) lines.push(t('c.gawkers', { n: gawk }));
+        }
+        return lines;
+      };
+      break;
+    }
+    case 'release':
+      out.title = t('n.release', { n: n.n });
+      out.live = () => [t('c.inCells', { n: prisonerCount(state()) })];
+      break;
     case 'blackout':
       out.title = n.on ? t('n.blackout.on') : t('n.blackout.off');
       out.live = () => {
@@ -196,7 +225,7 @@ export function describeNotice(n, state, world) {
         parking: [v ? 'same.parkingTrue' : 'same.parkingFalse', {}], festival: [v ? 'same.festivalTrue' : 'same.festivalFalse', {}],
         fire: ['same.fire', {}], robbery: ['same.robbery', {}], blackout: [v ? 'same.blackoutTrue' : 'same.blackoutFalse', {}],
         rush: [v ? 'same.rushTrue' : 'same.rushFalse', {}], lightshow: [v ? 'same.lightshowTrue' : 'same.lightshowFalse', {}],
-        timeLock: [v ? 'same.timeLockTrue' : 'same.timeLockFalse', {}],
+        timeLock: [v ? 'same.timeLockTrue' : 'same.timeLockFalse', {}], arrest: ['same.arrest', {}],
       }[n.what] || ['reply.unknown', {}];
       out.title = t(key[0], key[1]);
       out.quiet = true;
@@ -230,6 +259,7 @@ export function describeEvent(e, world) {
   if (e.key === 'ev.getaway') p.place = exitName(world, p.exit);
   if (e.key === 'ev.caught' || e.key === 'ev.escaped') p.place = t(p.where);
   if (e.key === 'ev.fireSpread') p.place = buildingName(world, p.b);
+  if ('name' in p && !p.name) p.name = t('p.robberName');
   return t(e.key, p);
 }
 
@@ -288,7 +318,17 @@ export function describePerson(p, state, world) {
   const lines = [];
   let status;
   const destName = p.dest && p.dest.k === 'b' ? buildingName(world, p.dest.b) : '';
-  if (p.kind === 'robber') status = t('p.robber');
+  let badge = null;
+  const onCase = state.cases && state.cases.find((c) => c.person === p.id);
+  if (p.st === 'down') {
+    status = t('p.down');
+    badge = { text: t('insp.dead'), tone: 'alert' };
+    lines.push(onCase && onCase.phase === 'scene' ? t('p.policeScene') : t('p.policeComing'));
+  } else if (p.st === 'held') {
+    status = p.path ? t('p.escorted') : t('p.held');
+    badge = { text: t('insp.arrested'), tone: 'alert' };
+    if (!p.path) lines.push(t('p.policeComing'));
+  } else if (p.kind === 'robber') status = t('p.robber');
   else if (p.st === 'walk') status = t(`p.walk.${p.purp}`, { place: destName });
   else status = t(`p.idle.${p.purp}`, { place: destName });
   if (p.kind === 'res') {
@@ -297,7 +337,7 @@ export function describePerson(p, state, world) {
     if (isWet(state) && isOutdoors(p)) lines.push(p.hasUmb ? t('p.umbrella') : t('p.wet'));
     if (p.unreach > state.t) lines.push(t('p.unreach'));
   }
-  return { title: p.kind === 'robber' ? t('p.robberName') : p.name, status, lines };
+  return { title: p.kind === 'robber' ? t('p.robberName') : p.name, status, lines, badge };
 }
 
 export function describeVehicle(v, state, world) {
@@ -336,6 +376,7 @@ export function describeBuilding(b, state, world) {
   if (b.residents) lines.push(t('insp.residents', { n: b.residents }));
   const inside = state.people.filter((p) => p.st === 'in' && p.at === b.index).length;
   lines.push(t('insp.inside', { n: inside }));
+  if (b.id === 'police') lines.push(t('insp.jailed', { n: prisonerCount(state) }));
   const fire = state.fires.find((f) => f.b === b.index && f.heat > 0);
   let badge = null;
   if (fire) badge = { text: t('insp.onFire'), tone: 'alert' };

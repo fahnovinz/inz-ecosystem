@@ -28,6 +28,7 @@ export function createState(world, seed = 7) {
     fires: [],
     charred: [],
     robbery: null,
+    cases: [], // police work: arrests and bodies waiting for a patrol
     blackout: false,
     rush: false,
     fireworks: { until: 0 },

@@ -6,6 +6,7 @@ import { LANDMARKS, RIVER_MIN, RIVER_MAX, strip } from '../world/layout.js';
 import { outdoorCount } from '../sim/people.js';
 import { waitingCount, unreachableCount } from '../sim/vehicles.js';
 import { periodOf, burning } from '../sim/common.js';
+import { onStreet, prisonerCount } from '../sim/police.js';
 import { starsDataURL } from '../render/materials.js';
 import { describeNotice, describeEvent, suggestions, describePerson, describeVehicle, describeBuilding, buildingName } from './describe.js';
 
@@ -30,6 +31,8 @@ const I = {
   car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 16V11l2-5h10l2 5v5z"/><circle cx="8" cy="17" r="1.8"/><circle cx="16" cy="17" r="1.8"/></svg>',
   building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 21V5l8-2v18M12 21V9l8 2v10M3 21h18M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"/></svg>',
   place: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  jail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 12h16"/></svg>',
+  skull: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a8 8 0 0 0-5 14.2V20h10v-2.8A8 8 0 0 0 12 3z"/><circle cx="9" cy="11.5" r="1.5"/><circle cx="15" cy="11.5" r="1.5"/><path d="M10 20v-2M14 20v-2"/></svg>',
   lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   fire: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22c4 0 7-2.8 7-7 0-4-3-6.5-4-10-2 2-3 3.5-3 6-1.2-1-2-2.3-2-4C7.5 9.5 5 12 5 15c0 4.2 3 7 7 7z"/></svg>',
   water: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
@@ -576,10 +579,12 @@ export function createUI(root, app) {
     let icon = I.place, title = '', status = '', lines = [], badge = null, actions = [];
     if (sel.kind === 'person') {
       const p = s.people.find((x) => x.id === sel.id);
-      if (!p || (p.st !== 'walk' && p.st !== 'idle')) { app.select(null); return; }
-      ({ title, status, lines } = describePerson(p, s, app.world));
+      if (!p || !onStreet(p)) { app.select(null); return; }
+      ({ title, status, lines, badge } = describePerson(p, s, app.world));
       icon = I.person;
       actions.push(app.following() ? ['unfollow', I.follow, t('ui.unfollow')] : ['follow', I.follow, t('ui.follow')]);
+      if (p.st === 'walk' || p.st === 'idle') actions.push(['arrest', I.jail, t('act.arrest')]);
+      if (p.st !== 'down') actions.push(['kill', I.skull, t('act.kill'), 'is-danger']);
     } else if (sel.kind === 'vehicle') {
       const v = s.vehicles.find((x) => x.id === sel.id);
       if (!v) { app.select(null); return; }
@@ -593,6 +598,7 @@ export function createUI(root, app) {
       const onFire = s.fires.some((f) => f.b === b.index && f.heat > 0);
       if (b.id === 'bank' && !(s.robbery && s.robbery.phase !== 'over')) actions.push(['rob', I.bell, t('act.rob')]);
       if (b.id === 'vrax-tower') actions.push(s.lightshow ? ['showOff', I.place, t('act.showOff')] : ['showOn', I.place, t('act.showOn')]);
+      if (b.id === 'police' && prisonerCount(s)) actions.push(['release', I.jail, t('act.release')]);
       actions.push(onFire ? ['putOut', I.water, t('act.putOut')] : ['fire', I.fire, t('act.fire')]);
     } else if (sel.kind === 'area') {
       const id = sel.id;
@@ -629,7 +635,7 @@ export function createUI(root, app) {
     inspector.innerHTML = `<div class="card-head"><span class="card-icon">${icon}</span><h2>${esc(title)}</h2>${badge ? `<span class="badge is-${badge.tone}">${esc(badge.text)}</span>` : ''}<button type="button" class="btn btn-ghost btn-icon card-close" data-insp-close aria-label="${esc(t('ui.close'))}">${I.x}</button></div>
       ${status ? `<p class="status">${esc(status)}</p>` : ''}
       ${lines.map((l) => `<p class="detail">${esc(l)}</p>`).join('')}
-      ${actions.length ? `<div class="actions">${actions.map(([k, ic, label]) => `<button type="button" class="btn btn-outline" data-insp="${k}">${ic}<span>${esc(label)}</span></button>`).join('')}</div>` : ''}`;
+      ${actions.length ? `<div class="actions">${actions.map(([k, ic, label, cls]) => `<button type="button" class="btn btn-outline${cls ? ` ${cls}` : ''}" data-insp="${k}">${ic}<span>${esc(label)}</span></button>`).join('')}</div>` : ''}`;
     inspector.querySelector('[data-insp-close]').onclick = () => app.select(null);
     inspector.querySelectorAll('[data-insp]').forEach((b) => { b.onclick = () => inspectorAction(b.dataset.insp, sel); });
   }
@@ -643,6 +649,7 @@ export function createUI(root, app) {
       close: [{ type: 'bridge', id: sel.id === 'bridge-north' ? 'north' : 'south', closed: true }],
       toPark: [{ type: 'parking', park: true }], toParking: [{ type: 'parking', park: false }],
       festOn: [{ type: 'festival', on: true }], festOff: [{ type: 'festival', on: false }],
+      arrest: [{ type: 'arrest', id: sel.id }], kill: [{ type: 'kill', id: sel.id }], release: [{ type: 'release' }],
     };
     if (k === 'follow') { app.follow(true); renderInspector(true); return; }
     if (k === 'unfollow') { app.follow(false); renderInspector(true); return; }

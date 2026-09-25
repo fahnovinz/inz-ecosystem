@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { radialTexture } from './materials.js';
+import { onStreet } from '../sim/police.js';
 
 const MAX = 420;
 const SCALE = 1.25;
@@ -180,6 +181,7 @@ export function makePeople(scene) {
 
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
   const Y = new THREE.Vector3(0, 1, 0);
+  const FALL = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
   const col = new THREE.Color();
   const looks = new Map();
   const put = (attr, i, hex) => { col.set(hex); attr.array[i * 3] = col.r; attr.array[i * 3 + 1] = col.g; attr.array[i * 3 + 2] = col.b; };
@@ -190,11 +192,12 @@ export function makePeople(scene) {
     const nightTorch = state.blackout && env.night > 0.5;
     screen.length = 0;
     for (const p of state.people) {
-      if (p.st !== 'walk' && p.st !== 'idle') continue;
+      if (!onStreet(p)) continue;
       if (n >= MAX) break;
       let look = looks.get(p.id);
       if (!look) { look = lookFor(p); looks.set(p.id, look); }
-      const walking = p.st === 'walk' && !(p.kerb > 0);
+      const down = p.st === 'down';
+      const walking = (p.st === 'walk' && !(p.kerb > 0)) || (p.st === 'held' && !!p.path);
       const running = walking && (p.kind === 'robber' || p.purp === 'evac' || (wet && !p.hasUmb));
       const phase = time * (running ? 13 : 8.2) + p.id * 1.7;
       const amp = walking ? (running ? 0.8 : 0.48) : 0;
@@ -207,7 +210,9 @@ export function makePeople(scene) {
       const sc = SCALE * look.height;
       const bob = walking ? Math.abs(Math.sin(phase)) * 0.05 * sc : 0;
       Q.setFromAxisAngle(Y, p.hd);
-      M.compose(P.set(x, 0.14 + bob, z), Q, S.setScalar(sc));
+      // Fallen on their back, feet where they stood.
+      if (down) { Q.multiply(FALL); x += Math.sin(p.hd) * 0.8 * sc; z += Math.cos(p.hd) * 0.8 * sc; }
+      M.compose(P.set(x, down ? 0.33 : 0.14 + bob, z), Q, S.setScalar(sc));
       figures.setMatrixAt(n, M);
       put(attrs.iClothes, n, p.clothes);
       put(attrs.iPants, n, look.pants);
@@ -216,7 +221,7 @@ export function makePeople(scene) {
       attrs.iAnim.array[n * 3] = phase;
       attrs.iAnim.array[n * 3 + 1] = amp;
       attrs.iAnim.array[n * 3 + 2] = look.style;
-      if (wet && p.hasUmb && p.kind === 'res') {
+      if (wet && p.hasUmb && p.kind === 'res' && (p.st === 'walk' || p.st === 'idle')) {
         umbrellas.setMatrixAt(u, M);
         umbrellas.setColorAt(u, col.set(p.umbColor));
         u++;

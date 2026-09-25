@@ -83,6 +83,7 @@ Nothing is loaded from files: every note and noise is synthesised with the Web A
 ## Controls
 
 - **Click** a person, vehicle, building or place name to see what it is doing and what you can do with it.
+- A person's card can **Jail** them (a patrol car comes, officers walk them to it and they sit four hours in a cell at the Police Station, whose card can release everyone) or **Kill** them (they fall, onlookers gather and the police come for the body). Closed bridges can keep the patrol from getting there.
 - **Phone:** drag to move, pinch to zoom, twist two fingers to turn, drag two fingers up or down to tilt, double-tap to zoom in. Gestures also work when a finger lands on a place label.
 - **Mouse:** drag to move, scroll to zoom at the cursor, right-drag (or Shift-drag) to turn and tilt.
 - **Buttons** under Reset view zoom and turn the camera; hold them to keep going.
@@ -111,6 +112,7 @@ packages/vrax-world/
     │   ├── people.js      residents, plans, outdoor targets, shelter
     │   ├── vehicles.js    traffic, lanes, junction reservations, closures, buses
     │   ├── events.js      fire, robbery, festival crowds, boats
+    │   ├── police.js      arrests, killings and the cells, from a person's card
     │   ├── actions.js     applies one command, reports what changed
     │   └── state.js, step.js, rng.js, common.js
     ├── render/            three.js scene, city meshes, people, vehicles, effects, camera

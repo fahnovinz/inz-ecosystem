@@ -228,6 +228,66 @@ describe("vrax-world simulation", () => {
     assert.ok(state.vehicles.every((v) => Number.isFinite(v.x) && Number.isFinite(v.z)));
   });
 
+  it("jails a resident and releases them", () => {
+    const s = createState(world, 11);
+    for (let i = 0; i < 30; i++) step(s, world, 1 / 30);
+    const p = s.people.find((x) => x.st === "walk");
+    const n = applyAction(s, world, { type: "arrest", id: p.id });
+    assert.equal(n.kind, "arrest");
+    assert.equal(p.st, "held");
+    assert.ok(s.vehicles.some((v) => v.role === "police"), "patrol dispatched");
+    assert.equal(applyAction(s, world, { type: "arrest", id: p.id }).kind, "same");
+    for (let i = 0; i < 30 * 100 && p.st !== "jail"; i++) step(s, world, 1 / 30);
+    assert.equal(p.st, "jail");
+    assert.equal(p.at, world.buildingIndex.police);
+    assert.equal(applyAction(s, world, { type: "release" }).n, 1);
+    assert.equal(applyAction(s, world, { type: "release" }).reason, "noPrisoners");
+    for (let i = 0; i < 30 * 20; i++) step(s, world, 1 / 30);
+    assert.notEqual(p.st, "jail");
+    assert.equal(s.cases.length, 0);
+  });
+
+  it("kills a resident and the police take the body away", () => {
+    const s = createState(world, 12);
+    for (let i = 0; i < 30; i++) step(s, world, 1 / 30);
+    const p = s.people.find((x) => x.st === "walk");
+    const total = s.people.length;
+    const n = applyAction(s, world, { type: "kill", id: p.id });
+    assert.equal(n.kind, "kill");
+    assert.equal(p.st, "down");
+    assert.equal(applyAction(s, world, { type: "kill", id: p.id }).reason, "personGone");
+    for (let i = 0; i < 30 * 100 && s.people.includes(p); i++) step(s, world, 1 / 30);
+    assert.equal(s.people.length, total - 1);
+    assert.ok(!s.people.some((x) => x.id === p.id));
+  });
+
+  it("gives up an arrest the police cannot reach", () => {
+    const s = createState(world, 13);
+    for (let i = 0; i < 30; i++) step(s, world, 1 / 30);
+    applyAction(s, world, { type: "bridge", id: "both", closed: true });
+    // The police station is on the west bank: pick someone on the east bank.
+    const p = s.people.find((x) => (x.st === "walk" || x.st === "idle") && x.x > 30);
+    applyAction(s, world, { type: "arrest", id: p.id });
+    for (let i = 0; i < 30 * 120; i++) step(s, world, 1 / 30);
+    assert.notEqual(p.st, "held");
+    assert.equal(s.cases.length, 0);
+  });
+
+  it("arrests a robber mid-robbery", () => {
+    const s = createState(world, 14);
+    applyAction(s, world, { type: "robbery" });
+    step(s, world, 1 / 30);
+    const r = s.people.find((x) => x.kind === "robber");
+    applyAction(s, world, { type: "arrest", id: r.id });
+    assert.ok(!s.robbery.robbers.includes(r.id));
+    for (let i = 0; i < 30 * 100; i++) step(s, world, 1 / 30);
+    assert.equal(r.st, "jail");
+    assert.ok(s.people.includes(r));
+    applyAction(s, world, { type: "release" });
+    step(s, world, 1 / 30);
+    assert.ok(!s.people.includes(r), "a freed robber leaves town");
+  });
+
   it("snapshots restore exactly", () => {
     const snap = structuredClone(state);
     applyAction(state, world, { type: "festival", on: true });

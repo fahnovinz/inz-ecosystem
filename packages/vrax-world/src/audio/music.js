@@ -100,7 +100,8 @@ export function moodFor(state) {
   const night = h >= 19 || h < 5;
   const burning = state.fires.some((f) => f.heat > 0);
   const chase = state.robbery && (state.robbery.phase === 'running' || state.robbery.phase === 'escape');
-  if (burning || chase) return 'tense';
+  const police = state.cases && state.cases.length > 0;
+  if (burning || chase || police) return 'tense';
   if (state.festival.on) return 'festival';
   if (state.blackout && (night || h >= 17.5)) return 'blackout';
   if (state.lightshow && night) return 'lightshow';

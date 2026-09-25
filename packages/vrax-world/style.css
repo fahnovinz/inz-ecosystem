@@ -148,6 +148,7 @@ button, input { font: inherit; color: inherit; }
 .btn-ghost:hover:not(:disabled), .btn.is-on { background: var(--hover); }
 .btn-outline { background: var(--surface); border-color: var(--line); }
 .btn-outline:hover:not(:disabled) { border-color: var(--line-strong); background: var(--surface-2); }
+.btn-outline.is-danger { color: var(--danger); }
 .btn-primary { background: var(--primary); color: var(--primary-ink); }
 .btn-primary:hover:not(:disabled) { opacity: 0.9; }
 .btn:disabled { opacity: 0.38; cursor: default; }
