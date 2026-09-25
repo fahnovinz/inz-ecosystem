@@ -22,6 +22,7 @@ A short narrative you can reuse for portfolios, AI events, and applications.
 |-------|------------|--------|
 | **Tools** | Zero-dependency Node CLI + PowerShell scripts | `inz stats` / `health` / `badges` / `products` |
 | **Product** | Real app users can self-host | AES-256-GCM vault, deploy scripts, SECURITY.md |
+| **Sandbox** | VRAX World, a city simulation you change by typing (EN/ID) | `inz world`, headless simulation tests, no build step |
 
 ## Design principles
 

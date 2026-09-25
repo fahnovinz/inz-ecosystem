@@ -24,7 +24,8 @@ $files = @(
   "src/github-api.js",
   "src/products.js",
   "src/report.js",
-  "src/utils.js"
+  "src/utils.js",
+  "src/world-server.js"
 )
 foreach ($f in $files) {
   node --check $f

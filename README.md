@@ -1,6 +1,6 @@
 # INZ Ecosystem
 
-**Open-source indie platform** by [@fahnovinz](https://github.com/fahnovinz) — lightweight developer tools **and** a privacy-first flagship product.
+**Open-source indie platform** by [@fahnovinz](https://github.com/fahnovinz) — lightweight developer tools, a privacy-first flagship product **and** VRAX World, a miniature city you change by typing.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.3.2-green.svg)](CHANGELOG.md)
@@ -11,7 +11,8 @@
 ```text
   INZ Ecosystem
   ├── Tools      inz stats · health · badges · products
-  └── Product ★  VRAXTAL VAULT — self-hosted encrypted personal vault
+  ├── Product ★  VRAXTAL VAULT — self-hosted encrypted personal vault
+  └── Product ◆  VRAX World — city sandbox: change one thing, watch the city react
 ```
 
 > **Story in one line:** build better open-source habits with CLI tools, and ship real privacy software people can run — [docs/ecosystem.md](docs/ecosystem.md).
@@ -46,6 +47,20 @@ Product card: [packages/vraxtal-vault](packages/vraxtal-vault/) · Demo (maintai
 
 ---
 
+## VRAX World — city sandbox
+
+![VRAX World](packages/vrax-world/docs/vrax-world-day.jpg)
+
+A miniature 3D city where people, traffic, weather, the river and light share one simulation. Type a change in **English or Bahasa Indonesia** (“close the north bridge”, “bikin hujan”, “rampok bank”) and watch the city react: traffic reroutes, umbrellas open, fire trucks race to the scene, robbers flee across the river. Commands are parsed locally by a rule-based interpreter, with no AI model and no network calls. A generative soundtrack and city sounds, synthesised live with Web Audio, follow what happens: lo-fi by day, jazz at night, gamelan at the festival, sirens on the way to a fire.
+
+```bash
+npm run world        # → http://127.0.0.1:5173/
+```
+
+Details, command list and architecture: **[packages/vrax-world](packages/vrax-world/)**
+
+---
+
 ## Developer tools
 
 Zero runtime dependencies. Clone and run.
@@ -56,6 +71,7 @@ Zero runtime dependencies. Clone and run.
 | `inz stats` | Profile analytics — activity, PRs, portfolio breakdown |
 | `inz health` | Repo health score — README, license, CI, freshness |
 | `inz badges` | Generate shields.io badge markdown for any public repo |
+| `inz world` | Run VRAX World locally (`--port`, `--host`) |
 
 ### Quick start
 
@@ -140,6 +156,7 @@ inz-ecosystem/
 ├── src/                       # Core modules (stats, health, badges, products)
 ├── scripts/                   # PowerShell (Windows-native)
 ├── packages/                  # Per-tool & product cards
+│   ├── vrax-world/            # VRAX World city sandbox (full source, no build step)
 │   ├── vraxtal-vault/         # Reference card only (code → vraxtal-vault repo)
 │   ├── github-stats/
 │   ├── repo-health/
@@ -157,6 +174,7 @@ inz-ecosystem/
 - [x] Badge markdown generator  
 - [x] JSON output mode  
 - [x] Product catalog (`inz products`) + VRAXTAL VAULT as flagship  
+- [x] VRAX World city sandbox (`inz world`) with EN/ID commands  
 - [ ] npm/PyPI registry stats  
 - [ ] Batch health reports for orgs  
 - [ ] More VRAXTAL product surface (when ready)
@@ -177,6 +195,7 @@ PRs welcome — docs, health checks, and platform support. Read [CONTRIBUTING.md
 |--|--|
 | Ecosystem | [inz-ecosystem](https://github.com/fahnovinz/inz-ecosystem) |
 | Flagship | [vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault) |
+| Sandbox | [packages/vrax-world](packages/vrax-world/) |
 
 ## License
 

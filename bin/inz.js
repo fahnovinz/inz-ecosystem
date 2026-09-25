@@ -4,6 +4,7 @@ const { fetchGitHubStats } = require("../src/github-stats");
 const { fetchRepoHealth } = require("../src/repo-health");
 const { fetchRepoBadges } = require("../src/badges");
 const { listProducts } = require("../src/products");
+const { startWorldServer } = require("../src/world-server");
 const {
   printStatsReport,
   printHealthReport,
@@ -39,6 +40,7 @@ Usage:
   inz stats <username>              Profile & portfolio analytics
   inz health <owner/repo>           Repository health score
   inz badges <owner/repo>           Generate README badge markdown
+  inz world                         Run VRAX World, the miniature city sandbox
   inz version                       Show version
   inz help                          Show this help
 
@@ -46,12 +48,15 @@ Options:
   --json                            Output as JSON
   --kind product|tool               Filter products command
   --token <token>                   GitHub token (or set GITHUB_TOKEN)
+  --port <n>                        Port for inz world (default 5173)
+  --host <addr>                     Host for inz world (default 127.0.0.1)
 
 Examples:
   inz products
   inz stats fahnovinz
   inz health fahnovinz/vraxtal-vault
   inz badges fahnovinz/inz-ecosystem --json
+  inz world --port 8080
 `);
 }
 
@@ -84,6 +89,25 @@ async function main() {
     }
     const catalog = listProducts(kind ? { kind } : {});
     output(catalog, printProductsReport);
+    return;
+  }
+
+  if (command === "world") {
+    const port = Number(parseFlag("--port") || process.env.PORT || 5173);
+    const host = parseFlag("--host") || "127.0.0.1";
+    if (!Number.isInteger(port) || port < 0 || port > 65535) {
+      console.error("Error: --port must be a number between 0 and 65535.\n");
+      process.exit(1);
+    }
+    try {
+      const { url } = await startWorldServer({ port, host });
+      console.log(`\n  VRAX World is running at ${url}`);
+      console.log("  Change one thing. Watch the whole city react.");
+      console.log("  Press Ctrl+C to stop.\n");
+    } catch (error) {
+      console.error(`Error: ${error.message}`);
+      process.exit(1);
+    }
     return;
   }
 

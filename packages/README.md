@@ -5,6 +5,7 @@ Documented modules and product cards. The root CLI (`bin/inz.js`) orchestrates t
 | Package | Kind | Command / link | Status |
 |---------|------|----------------|--------|
 | [vraxtal-vault](vraxtal-vault/) | **Product card** (README only — code lives in [vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault)) | [github.com/fahnovinz/vraxtal-vault](https://github.com/fahnovinz/vraxtal-vault) | Flagship |
+| [vrax-world](vrax-world/) | **Product** (full source: static web app, no build step) | `inz world` | New |
 | [github-stats](github-stats/) | Tool | `inz stats` | Stable |
 | [repo-health](repo-health/) | Tool | `inz health` | Stable |
 | [badges](badges/) | Tool | `inz badges` | Stable |
