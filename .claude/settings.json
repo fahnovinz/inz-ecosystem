@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "runpod": {
+      "source": {
+        "source": "github",
+        "repo": "runpod/runpod-plugins-official"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "runpod@runpod": true
+  }
+}
