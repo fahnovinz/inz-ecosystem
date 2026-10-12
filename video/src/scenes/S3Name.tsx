@@ -3,7 +3,7 @@ import {useCurrentFrame} from 'remotion';
 import {Staggered} from '../components/Text';
 import {COPY, getLayout} from '../layout';
 import {C, T} from '../theme';
-import {S2, S3, STAGGER_LETTER, STAGGER_WORD} from '../timing';
+import {EXIT_FAST, S2, S3, STAGGER_EXIT_FAST, STAGGER_LETTER, STAGGER_WORD, RISE} from '../timing';
 import {label, name} from './common';
 
 /** Beat 3 — the name lands on the line (the drop), with what it covers underneath. */
@@ -16,9 +16,10 @@ export const S3Name: React.FC = () => {
       <Staggered
         text={COPY.name}
         by="letter"
+        inRise={-RISE} // drops onto the line instead of rising through it
         start={S3.lettersIn}
         stagger={STAGGER_LETTER}
-        outStart={S3.out}
+        outStart={S3.out} outStagger={STAGGER_EXIT_FAST} outDur={EXIT_FAST}
         color={C.ink}
         style={{...name(T.name), top: L.s3.top}}
       />
@@ -26,7 +27,7 @@ export const S3Name: React.FC = () => {
         text={COPY.s3tag}
         start={S3.taglineIn}
         stagger={STAGGER_WORD}
-        outStart={S3.taglineOut}
+        outStart={S3.taglineOut} outStagger={STAGGER_EXIT_FAST} outDur={EXIT_FAST}
         color={C.muted}
         style={{...label(T.body), left: 0, right: 0, textAlign: 'center', top: L.s3.tagTop}}
       />

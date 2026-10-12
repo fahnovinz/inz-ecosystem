@@ -3,7 +3,7 @@ import {useCurrentFrame} from 'remotion';
 import {Staggered} from '../components/Text';
 import {COPY, getLayout} from '../layout';
 import {C, FONT, T} from '../theme';
-import {S5, S6, STAGGER_LETTER, STAGGER_WORD} from '../timing';
+import {S5, S6, STAGGER_LETTER, STAGGER_WORD, RISE} from '../timing';
 import {headline, name} from './common';
 
 /** Beat 6 — end card: the name, the answer to beat 2, and where to go. Holds still to the end. */
@@ -16,6 +16,7 @@ export const S6End: React.FC = () => {
       <Staggered
         text={COPY.name}
         by="letter"
+        inRise={-RISE} // drops onto the line instead of rising through it
         start={S6.lettersIn}
         stagger={STAGGER_LETTER}
         color={C.ink}

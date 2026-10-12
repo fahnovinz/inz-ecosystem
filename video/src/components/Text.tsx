@@ -9,14 +9,17 @@ type Props = {
   start: number; // first unit starts entering
   stagger: number; // frames between units
   outStart?: number; // first unit starts leaving
+  inRise?: number; // px offset an entering unit starts from (positive = below)
   outRise?: number; // px travelled on exit (negative = up)
+  outStagger?: number;
+  outDur?: number;
   by?: 'word' | 'letter';
   color: string;
   style: React.CSSProperties;
 };
 
 /** Text that enters and leaves word by word (or letter by letter): ease out in, ease in out. */
-export const Staggered: React.FC<Props> = ({text, start, stagger, outStart, outRise = -RISE, by = 'word', color, style}) => {
+export const Staggered: React.FC<Props> = ({text, start, stagger, outStart, inRise = RISE, outRise = -RISE, outStagger = STAGGER_EXIT, outDur = EXIT, by = 'word', color, style}) => {
   const frame = useCurrentFrame();
   const tc = useTextColor();
   const units = by === 'word' ? text.split(' ') : Array.from(text);
@@ -24,8 +27,8 @@ export const Staggered: React.FC<Props> = ({text, start, stagger, outStart, outR
     <div style={{...style, color: tc(color), whiteSpace: 'pre'}}>
       {units.map((u, i) => {
         const p = enter(frame, start + i * stagger, ENTER);
-        const q = outStart === undefined ? 0 : exit(frame, outStart + i * STAGGER_EXIT, EXIT);
-        const y = (1 - p) * RISE + q * outRise;
+        const q = outStart === undefined ? 0 : exit(frame, outStart + i * outStagger, outDur);
+        const y = (1 - p) * inRise + q * outRise;
         return (
           <React.Fragment key={i}>
             <span style={{display: 'inline-block', transform: `translateY(${y}px)`, opacity: p * (1 - q)}}>{u}</span>

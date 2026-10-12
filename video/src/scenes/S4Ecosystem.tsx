@@ -5,7 +5,7 @@ import {E, enter, exit, tween} from '../lib/anim';
 import {useFillColor, useShapeColor, useTextColor} from '../lib/mode';
 import {COPY, getLayout} from '../layout';
 import {BUS_W, C, COL, T} from '../theme';
-import {ENTER, EXIT, RISE, S4, STAGGER_CARD, STAGGER_WORD} from '../timing';
+import {ENTER, EXIT, EXIT_FAST, RISE, S4, STAGGER_CARD, STAGGER_EXIT_FAST, STAGGER_WORD} from '../timing';
 import {headline, label} from './common';
 
 const PAD = 32;
@@ -17,7 +17,7 @@ export const S4Ecosystem: React.FC = () => {
   const tc = useTextColor();
   const sc = useShapeColor();
   const fc = useFillColor();
-  if (frame < S4.headerIn - 4 || frame > S4.out + 30) return null;
+  if (frame < S4.headerIn - 4 || frame > S4.cardsOut + 30) return null;
   const L = getLayout().s4;
   const busY = L.bus.y;
 
@@ -32,6 +32,8 @@ export const S4Ecosystem: React.FC = () => {
         start={S4.headerIn}
         stagger={STAGGER_WORD}
         outStart={S4.out}
+        outStagger={STAGGER_EXIT_FAST}
+        outDur={EXIT_FAST}
         color={C.ink}
         style={{...headline(T.h2), left: COL, top: L.headTop}}
       />
@@ -44,9 +46,9 @@ export const S4Ecosystem: React.FC = () => {
         const cx = L.centers[i];
         const x = L.cardsX + i * (L.cardW + L.gap);
         const d = tween(frame, S4.dropsIn + i * STAGGER_CARD, S4.dropsIn + i * STAGGER_CARD + S4.dropDur, 0, 1, E.out);
-        const dOut = exit(frame, S4.out + i * S4.exitStagger, EXIT);
+        const dOut = exit(frame, S4.dropsOut + (COPY.tools.length - 1 - i) * S4.dropOutStagger, S4.dropOutDur);
         const p = enter(frame, S4.cardsIn + i * STAGGER_CARD, ENTER);
-        const q = exit(frame, S4.out + S4.cardExitLag + i * S4.exitStagger, EXIT);
+        const q = exit(frame, S4.cardsOut + i * S4.cardExitStagger, EXIT);
         const y = (1 - p) * RISE + q * RISE * 1.5;
         const op = p * (1 - q);
         const lp = enter(frame, S4.cardsIn + i * STAGGER_CARD + S4.labelLag, ENTER);

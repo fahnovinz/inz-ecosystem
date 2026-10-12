@@ -14,6 +14,8 @@ export const STAGGER_WORD = 3;
 export const STAGGER_LETTER = 2;
 export const STAGGER_CARD = 4;
 export const STAGGER_EXIT = 2;
+export const STAGGER_EXIT_FAST = 1; // exits that must clear the frame before the line moves
+export const EXIT_FAST = 8;
 export const RISE = 48; // px travelled by entering/exiting text
 
 // Cuts. Each one lands on a beat (multiples of BEAT).
@@ -33,13 +35,13 @@ export const S1 = {
 };
 export const S2 = {
   wordsIn: 134,
-  wordsOut: 230,
+  wordsOut: 229, // fast exit: gone by the drop at 240
 };
 export const S3 = {
   lettersIn: CUT.s2s3, // letters start the moment the line lands
   taglineIn: CUT.s2s3 + 12,
-  out: 330,
-  taglineOut: 334,
+  out: 330, // fast exit: gone by 344, before the line rises through
+  taglineOut: 330,
 };
 export const S4 = {
   headerIn: CUT.s3s4,
@@ -50,13 +52,16 @@ export const S4 = {
   dropDur: 10, // a drop line draws from the bus into its card
   labelLag: 3, // card label starts this many frames after its card
   nameLag: 5, // card name after its card
-  out: 552,
-  exitStagger: 3,
-  cardExitLag: 2, // card leaves after its drop starts retracting
+  dropsOut: 549, // drops retract into the bus first, rightmost first
+  dropOutDur: 6,
+  dropOutStagger: 1,
+  cardsOut: 551, // then the cards fall away, 2 frames apart, gone by 567
+  cardExitStagger: 2,
+  out: 566, // header leaves as "Real tools." arrives, so the frame never empties
 };
 export const S5 = {
   wordsIn: CUT.s4s5,
-  out: 702,
+  out: 704, // fast exit while the line runs underneath; gone by 716
 };
 export const S6 = {
   lettersIn: CUT.s5s6,
@@ -67,13 +72,16 @@ export const S6 = {
 // Thread keyframes (the accent line). Between two keyframes it moves with ease-in-out;
 // it holds still from one keyframe's end to the next one's start.
 export const THREAD = {
-  s1ToS2: [118, 140],
-  s2ToS3: [230, CUT.s2s3], // the line leaves first and lands on the drop
-  s3ToS4: [332, 360],
-  s4ToS5a: [552, 564], // bus shrinks to a short bar at the left
-  s4ToS5b: [564, 578], // bar stands up beside "Real tools."
-  s5ToS6a: [702, 712], // bar lies down
-  s5ToS6b: [712, CUT.s5s6], // and runs out under the name
+  s1ToS2a: [118, 126], // cursor flattens and drops below the baseline
+  s1ToS2b: [126, 140], // then slides under "ship"
+  s2ToS3a: [230, 238], // widens to the name's width, still below the words
+  s2ToS3b: [238, CUT.s2s3], // and snaps up onto the drop
+  s3ToS4: [338, 360], // rises into the bus once the name has gone
+  s4ToS5a: [555, 562], // bus shrinks to a short bar at the left
+  s4ToS5b: [562, 574], // bar stands up beside "Real tools."
+  s5ToS6a: [700, 708], // bar folds down to its foot, left of the words
+  s5ToS6b: [708, 716], // runs right underneath the words
+  s5ToS6c: [716, CUT.s5s6], // and rises into place under the name on the hit
 } as const;
 
 // Camera: the dot grid pans one step on each cut.

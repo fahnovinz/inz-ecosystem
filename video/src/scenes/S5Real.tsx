@@ -3,13 +3,13 @@ import {useCurrentFrame} from 'remotion';
 import {Staggered} from '../components/Text';
 import {COPY, getLayout} from '../layout';
 import {C, LH, T} from '../theme';
-import {S4, S5, STAGGER_EXIT, STAGGER_WORD} from '../timing';
+import {EXIT_FAST, S4, S5, STAGGER_EXIT_FAST, STAGGER_WORD} from '../timing';
 import {headline} from './common';
 
 /** Beat 5 — the proof: real tools, built with AI. The line stands beside it as a bar. */
 export const S5Real: React.FC = () => {
   const frame = useCurrentFrame();
-  if (frame < S4.out || frame > S5.out + 24) return null;
+  if (frame < S4.cardsOut || frame > S5.out + 24) return null;
   const L = getLayout().s5;
   const lh = T.h1 * LH;
   const nA = COPY.s5a.split(' ').length;
@@ -19,7 +19,7 @@ export const S5Real: React.FC = () => {
         text={COPY.s5a}
         start={S5.wordsIn}
         stagger={STAGGER_WORD}
-        outStart={S5.out}
+        outStart={S5.out} outStagger={STAGGER_EXIT_FAST} outDur={EXIT_FAST}
         color={C.ink}
         style={{...headline(T.h1), left: L.textX, top: L.top}}
       />
@@ -27,7 +27,7 @@ export const S5Real: React.FC = () => {
         text={COPY.s5b}
         start={S5.wordsIn + nA * STAGGER_WORD}
         stagger={STAGGER_WORD}
-        outStart={S5.out + nA * STAGGER_EXIT}
+        outStart={S5.out + nA * STAGGER_EXIT_FAST} outStagger={STAGGER_EXIT_FAST} outDur={EXIT_FAST}
         color={C.ink}
         style={{...headline(T.h1), left: L.textX, top: L.top + lh}}
       />
