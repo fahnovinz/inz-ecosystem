@@ -1,14 +1,25 @@
 // Palette, type scale and grid. See design/LOOK.md.
 
 export const C = {
-  bg: '#07090D',
-  ink: '#EEF2F6',
-  muted: '#8A94A3',
-  accent: '#0EA5E9',
-  cardFill: 'rgba(238,242,246,0.04)',
-  cardLine: 'rgba(238,242,246,0.12)',
-  grid: 'rgba(138,148,163,0.16)',
+  bg: '#15123B', // deep indigo
+  ink: '#FFF7EC', // warm white
+  muted: '#B4B0E0', // lavender
+  accent: '#FFD84D', // the Thread: sunny yellow, the one thing to look at
+  cardFill: 'rgba(255,247,236,0.05)',
+  cardLine: 'rgba(255,247,236,0.14)',
+  grid: 'rgba(180,176,224,0.14)',
+  panel: '#221E55', // illustration surfaces (editor window), bg lifted toward ink
+  panelDark: '#0E0C2A', // glyphs drawn on coloured tiles
 };
+
+// Illustration palette: one colour per tool / topic. Never used for text.
+export const P = {
+  coral: '#FF6F61',
+  teal: '#2DD4BF',
+  sky: '#5AB8FF',
+  violet: '#B48CFF',
+};
+export const TOOL_COLOR = [P.coral, P.teal, P.sky, P.violet]; // POS, VAULT, SIGNAL, Chatbot
 
 const step = (n: number) => Math.round(30 * Math.pow(1.25, n) * 100) / 100;
 export const T = {

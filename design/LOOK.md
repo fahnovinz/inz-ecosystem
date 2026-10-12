@@ -6,20 +6,27 @@ Written before any frame was drawn. Approved frames freeze this file; change it 
 **The Thread.** One accent line carries the whole video: it is the prompt cursor, then the underline under
 "shipping", the base under the name, the bus that connects the four tools, the bar beside "Real tools", and
 finally the underline on the end card. The accent always marks the one thing to look at, and it is also the
-carrier for every cut.
+carrier for every cut. Flat, colourful illustrations around the words show what each beat is about.
 
 ## Palette (hex)
+Revised after the gate-4 note "too plain, make it colourful with illustrations" (taste).
+
 | Role | Hex | Use |
 |---|---|---|
-| Background | `#07090D` | Every frame. Never replaced by a flat-colour dip. |
-| Neutral 1 (ink) | `#EEF2F6` | Headlines, names. |
-| Neutral 2 (muted) | `#8A94A3` | Labels, URL, dot grid (at 16 % alpha). |
-| Accent | `#0EA5E9` | The Thread and nodes only. One accent thing per frame. |
+| Background | `#15123B` | Deep indigo, every frame. Never replaced by a flat-colour dip. |
+| Neutral 1 (ink) | `#FFF7EC` | Headlines, names. Warm white. |
+| Neutral 2 (muted) | `#B4B0E0` | Labels, URL, dot grid (at 14 % alpha). Lavender. |
+| Accent | `#FFD84D` | The Thread only (cursor, underline, bus, bar). Still the one thing to look at. |
 
-Card surfaces are Neutral 1 at 4 % alpha (fill) and 12 % alpha (2 px border): tints, not new colours.
-The cyan comes from the existing VRAXTAL VAULT flagship badge in the repo README.
+**Illustration set** (shapes only, never text): coral `#FF6F61` · teal `#2DD4BF` · sky `#5AB8FF` · violet `#B48CFF`.
+One colour per tool, the same everywhere: POS coral, VAULT teal, SIGNAL sky, Chatbot violet.
+Topics: art coral, markets sky, tools teal. Surfaces: panel `#221E55`, glyphs on tiles `#0E0C2A`.
 
-Contrast (WCAG): ink on bg 17.7:1 · muted on bg 6.5:1 · muted on card 5.97:1 · accent on bg 7.2:1.
+This widens the brief's "1 accent" rule on purpose: the four illustration colours carry the
+illustrations, while the yellow accent alone marks what to look at. Text stays ink or muted.
+
+Contrast (WCAG): ink on bg 16.7:1 · muted on bg 8.7:1 · muted on the darkest tool-tinted card 6.7:1 ·
+accent on bg 12.9:1.
 
 ## Type
 - Headline: **Space Grotesk** 500/700 (SIL OFL 1.1, `public/fonts/OFL-SpaceGrotesk.txt`).
@@ -36,16 +43,20 @@ Contrast (WCAG): ink on bg 17.7:1 · muted on bg 6.5:1 · muted on card 5.97:1 �
 - 12-column feel at 48 px dot grid; the dot grid is the only texture.
 
 ## Shape language
-- Rounded but tight: card radius 16 px, node dots round, line caps square (it reads as a cursor/machine).
-- Flat. No gradients, no glow, no drop shadows, no 3D.
-- Line weights: Thread 6 px (4 px as the tool bus), card borders 2 px.
-- Texture: static dot grid, 2 px dots every 48 px, muted at 16 % alpha. It pans with the "camera" on cuts.
+- Rounded and friendly: card radius 16 px, tiles radius 28 % of their size, round dots, square line caps on the Thread.
+- Flat colour illustrations drawn in code: no outlines on fills, no gradients, no glow, no drop shadows, no 3D.
+- Motifs: a code editor and an AI prompt bubble (beat 1), a rocket that launches on the drop (beat 2),
+  topic tiles and confetti (beat 3), tool icons on tinted cards (beat 4), the four tool tiles with AI sparkles
+  (beat 5), confetti around the end card (beat 6).
+- Line weights: Thread 6 px (4 px as the tool bus), card borders 2 px, glyph strokes 8–9 % of the tile.
+- Texture: static dot grid, 2 px dots every 48 px. It pans with the "camera" on cuts.
+- Illustrations never touch text and never sit on the Thread's routes (checked on every frame in motion).
 
 ## Motion
 - 120 BPM: 1 beat = 15 frames, 1 bar = 60 frames. Every cut and key hit sits on a beat.
 - Entrances ease out (`Easing.out(Easing.cubic)` / critically damped springs with no overshoot), exits ease in.
 - Words and letters stagger 2–4 frames; the next element starts before the last one settles.
-- Only machine things move linearly: the cursor blink and the signal pulse along the bus.
+- Only machine things move linearly: the cursor blink, code typing in the editor, the rocket's tremble and the signal pulse.
 - The key idea sits still: after a scene settles nothing moves until its exit.
 
 ## Logo

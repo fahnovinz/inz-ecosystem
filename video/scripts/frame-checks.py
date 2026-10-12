@@ -3,7 +3,8 @@
 usage: python3 -I scripts/frame-checks.py <dir> <frame>[,<frame>...] [--motion]
 Expects <dir>/text-NNNN.png and <dir>/shapes-NNNN.png (from stills.mjs in 'text' / 'shapes' mode).
 - text_safe_area: every text pixel inside title-safe (5 %).
-- shapes in action-safe (3.5 %).
+- shapes in action-safe (3.5 %) on settled frames. With --motion an exit that leaves the frame (the
+  rocket) is reported as 'exits frame' and does not fail; text must stay title-safe on every frame.
 - no_collisions: no pixel is both text and shape (after a 2 px dilation of shapes).
 - text_contrast: conservative WCAG ratio between the darkest text colour (>=40 solid px) and the
   brightest 5 % of the ring just around the text, measured in <dir>/full-NNNN.png. Needs >= 4.5.
@@ -21,7 +22,7 @@ TS = (int(W * .05), int(H * .05), W - int(W * .05), H - int(H * .05))
 AS = (int(W * .035), int(H * .035), W - int(W * .035), H - int(H * .035))
 fails = 0
 MIN_INK = 2500  # px at 1920x1080 (~0.12 % of the frame)
-BG = np.array([7, 9, 13])
+BG = np.array([0x15, 0x12, 0x3B])  # keep in sync with src/theme.ts C.bg
 
 def ink(f):
     try:
@@ -69,14 +70,16 @@ for f in frames:
     s = np.array(sim) > 24
     tb, sb = tuple(map(int, bbox(t) or ())) or None, bbox(np.array(load('shapes', f)) > 24)
     hit = int((t & s).sum())
-    ok_t, ok_s, ok_c = inside(tb, TS), inside(sb, AS), hit == 0
+    ok_t, ok_c = inside(tb, TS), hit == 0
+    in_as = inside(sb, AS)
+    ok_s = in_as or not CONTRAST  # CONTRAST is False in --motion mode
     cr = contrast(f) if CONTRAST else None
     ok_k = cr is None or cr >= 4.5
     px = ink(f)
     ok_b = px is None or px >= MIN_INK
     fails += (not ok_t) + (not ok_s) + (not ok_c) + (not ok_k) + (not ok_b)
     print(f'frame {f:4d}  text bbox {tb} {"ok" if ok_t else "OUTSIDE title-safe"}  '
-          f'shape bbox {sb} {"ok" if ok_s else "OUTSIDE action-safe"}  '
+          f'shape bbox {sb} {"ok" if in_as else ("exits frame" if ok_s else "OUTSIDE action-safe")}  '
           f'collision px {hit} {"ok" if ok_c else "COLLIDES"}  '
           f'contrast {"-" if cr is None else round(cr, 2)} {"ok" if ok_k else "LOW"}  '
           f'ink {px} {"ok" if ok_b else "BLANK"}')

@@ -110,3 +110,34 @@ export const KEY_HITS = [
   {name: 'Real tools in', frame: CUT.s4s5},
   {name: 'end card, final hit', frame: CUT.s5s6},
 ];
+
+// Illustrations (art). Entrances overlap the words; exits clear before the Thread moves through.
+export const ART = {
+  s1EditorIn: 6,
+  s1BubbleIn: 28,
+  s1TypeStart: 14, // code lines type in one after another (machine: linear)
+  s1TypeLine: 6,
+  s1TypeGap: 3,
+  s1Out: 102, // editor + bubble gone by 116, before the cursor moves
+  s2RocketIn: 142,
+  s2Shake: 222, // rocket trembles (machine) and the flame lights
+  s2Launch: 234, // lifts off, ease in, and is gone by 254: the drop pushes it out
+  s2LaunchDur: 20,
+  s2PuffEvery: 2,
+  s2PuffLife: 22,
+  s3Burst: CUT.s2s3, // confetti bursts out of the line on the drop
+  s3BurstDur: 22,
+  s3TilesIn: 258,
+  s3Out: 322, // gone by 336, before the line rises
+  s4IconLag: 7, // card icon after its card
+  s4PopRise: 4,
+  s4PopFall: 10,
+  s5TilesIn: 578,
+  s5SparkIn: 594,
+  s5Out: 690, // gone by ~708, before the line runs underneath
+  s6Burst: CUT.s5s6,
+  s6BurstDur: 24,
+  stagger: 4,
+  enter: 16,
+  exit: 12,
+};

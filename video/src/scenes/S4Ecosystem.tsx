@@ -1,11 +1,13 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
+import {TOOL_GLYPHS, Tile} from '../components/Art';
 import {Staggered} from '../components/Text';
+import {S4_ICON} from '../artLayout';
 import {E, enter, exit, tween} from '../lib/anim';
 import {useFillColor, useShapeColor, useTextColor} from '../lib/mode';
 import {COPY, getLayout} from '../layout';
-import {BUS_W, C, COL, T} from '../theme';
-import {ENTER, EXIT, EXIT_FAST, RISE, S4, STAGGER_CARD, STAGGER_EXIT_FAST, STAGGER_WORD} from '../timing';
+import {BUS_W, C, COL, T, TOOL_COLOR} from '../theme';
+import {ART, ENTER, EXIT, EXIT_FAST, RISE, S4, STAGGER_CARD, STAGGER_EXIT_FAST, STAGGER_WORD} from '../timing';
 import {headline, label} from './common';
 
 const PAD = 32;
@@ -54,6 +56,12 @@ export const S4Ecosystem: React.FC = () => {
         const lp = enter(frame, S4.cardsIn + i * STAGGER_CARD + S4.labelLag, ENTER);
         const np = enter(frame, S4.cardsIn + i * STAGGER_CARD + S4.nameLag, ENTER);
         const dropH = L.cardTop - (busY + BUS_W);
+        const col = TOOL_COLOR[i];
+        const ip = enter(frame, S4.cardsIn + i * STAGGER_CARD + ART.s4IconLag, ENTER);
+        // The signal reaches this node: its icon gives one small pop.
+        const hit = S4.pulse + ((cx - (L.bus.x - 80)) / (L.bus.w + 80)) * S4.pulseLen;
+        const pop =
+          tween(frame, hit, hit + ART.s4PopRise, 0, 1, E.out) * (1 - tween(frame, hit + ART.s4PopRise, hit + ART.s4PopFall, 0, 1, E.inOut));
         return (
           <React.Fragment key={t.name}>
             {/* drop from the bus into the card */}
@@ -64,7 +72,7 @@ export const S4Ecosystem: React.FC = () => {
                 top: busY + BUS_W,
                 width: BUS_W,
                 height: dropH * d * (1 - dOut),
-                background: sc(C.accent),
+                background: sc(col),
               }}
             />
             <div
@@ -77,9 +85,9 @@ export const S4Ecosystem: React.FC = () => {
                 transform: `translateY(${y}px)`,
                 opacity: op,
                 borderRadius: 16,
-                background: fc(C.cardFill),
+                background: fc(`${col}24`), // tool colour at 14 %
                 boxSizing: 'border-box',
-                border: `2px solid ${sc(C.cardLine)}`,
+                border: `2px solid ${sc(`${col}73`)}`, // tool colour at 45 %
               }}
             >
               <div
@@ -90,8 +98,17 @@ export const S4Ecosystem: React.FC = () => {
                   width: NODE,
                   height: NODE,
                   borderRadius: NODE,
-                  background: sc(C.accent),
+                  background: sc(col),
                 }}
+              />
+              <Tile
+                x={L.cardW - PAD - S4_ICON}
+                y={PAD - 4}
+                size={S4_ICON}
+                color={col}
+                glyph={TOOL_GLYPHS[i]}
+                scale={(0.6 + 0.4 * ip) * (1 + 0.12 * pop)}
+                opacity={ip}
               />
               <div
                 style={{

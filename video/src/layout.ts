@@ -2,7 +2,7 @@
 // so lines that sit under words always match the real glyphs.
 import {measureText} from '@remotion/layout-utils';
 import {COPY} from './copy';
-import {COL, FONT, LH, T, TRACK_HEAD, TRACK_NAME, THREAD_W, BUS_W, W} from './theme';
+import {COL, FONT, LH, T, TRACK_HEAD, TRACK_LABEL, TRACK_NAME, THREAD_W, BUS_W, W} from './theme';
 
 
 const width = (text: string, size: number, weight: string, trackEm: number, family = FONT.head) =>
@@ -33,6 +33,17 @@ function build() {
   const nameW = width(COPY.name, T.name, '700', TRACK_NAME);
   const base: Rect = {x: (W - nameW) / 2, y: s3Top + T.name * LH + 24, w: nameW, h: THREAD_W};
   const s3TagTop = base.y + 40;
+  // Centre x of each tagline word (art, markets, tools), so a tile can sit under each one.
+  const units = COPY.s3tag.toUpperCase().split(' ');
+  const uw = (t: string) => width(t, T.body, '500', TRACK_LABEL, FONT.body);
+  const space = uw(' ');
+  const total = units.reduce((a, u) => a + uw(u), 0) + space * (units.length - 1);
+  let cx = (W - total) / 2;
+  const tagCenters: number[] = [];
+  units.forEach((u) => {
+    if (u !== '·') tagCenters.push(cx + uw(u) / 2);
+    cx += uw(u) + space;
+  });
 
   // S4 — header, bus, four cards.
   const cardW = 360;
@@ -60,7 +71,7 @@ function build() {
   return {
     s1: {top: s1Top, cursor},
     s2: {top: s2Top, underline},
-    s3: {top: s3Top, base, tagTop: s3TagTop},
+    s3: {top: s3Top, base, tagTop: s3TagTop, tagCenters},
     s4: {headTop: s4HeadTop, cardW, cardH, cardTop, cardsX, gap, centers, bus},
     s5: {top: s5Top, bar, textX: s5TextX},
     s6: {top: s6Top, endLine, lineTop: s6LineTop, urlTop: s6UrlTop},

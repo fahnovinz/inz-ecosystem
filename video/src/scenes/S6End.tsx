@@ -1,9 +1,11 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
+import {Burst} from '../components/Burst';
 import {Staggered} from '../components/Text';
+import {S6_CONFETTI} from '../artLayout';
 import {COPY, getLayout} from '../layout';
 import {C, FONT, T} from '../theme';
-import {S5, S6, STAGGER_LETTER, STAGGER_WORD, RISE} from '../timing';
+import {ART, S5, S6, STAGGER_LETTER, STAGGER_WORD, RISE} from '../timing';
 import {headline, name} from './common';
 
 /** Beat 6 — end card: the name, the answer to beat 2, and where to go. Holds still to the end. */
@@ -13,6 +15,12 @@ export const S6End: React.FC = () => {
   const L = getLayout().s6;
   return (
     <>
+      <Burst
+        pieces={S6_CONFETTI}
+        from={[
+          {x: L.endLine.x, y: L.endLine.y},
+          {x: L.endLine.x + L.endLine.w, y: L.endLine.y},
+        ]} start={ART.s6Burst} dur={ART.s6BurstDur} />
       <Staggered
         text={COPY.name}
         by="letter"

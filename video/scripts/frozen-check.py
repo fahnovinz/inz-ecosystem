@@ -6,7 +6,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-FROZEN = [(60, 'sf1-beat1'), (200, 'sf2-beat2'), (300, 'sf3-beat3'), (500, 'sf4-beat4'), (880, 'sf5-beat6')]
+FROZEN = [(96, 'sf1-beat1'), (200, 'sf2-beat2'), (300, 'sf3-beat3'), (500, 'sf4-beat4'), (880, 'sf5-beat6')]
 fails = 0
 for f, name in FROZEN:
     a = np.array(Image.open(f'{sys.argv[1]}/full-{f:04d}.png').convert('RGB')).astype(int)
