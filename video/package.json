@@ -1,0 +1,27 @@
+{
+  "name": "vraxtal-intro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VRAXTAL 30 s brand intro for vibe coders (Remotion)",
+  "scripts": {
+    "music": "node scripts/make-music.mjs",
+    "still": "node scripts/stills.mjs",
+    "render": "node scripts/render.mjs",
+    "check": "node scripts/checks.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "@remotion/bundler": "^4.0.534",
+    "@remotion/cli": "^4.0.534",
+    "@remotion/fonts": "^4.0.534",
+    "@remotion/layout-utils": "^4.0.534",
+    "@remotion/renderer": "^4.0.534",
+    "@types/react": "^19.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.534",
+    "typescript": "^7.0.2"
+  },
+  "type": "module"
+}
